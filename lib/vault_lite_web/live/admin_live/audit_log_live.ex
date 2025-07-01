@@ -264,416 +264,334 @@ defmodule VaultLiteWeb.AdminLive.AuditLogLive do
     |> Enum.join(", ")
   end
 
-  defp action_badge_class(action) do
+  defp get_action_badge_class(action) do
     case action do
-      "create" -> "bg-green-100 text-green-800"
-      "read" -> "bg-blue-100 text-blue-800"
-      "update" -> "bg-yellow-100 text-yellow-800"
-      "delete" -> "bg-red-100 text-red-800"
-      "list" -> "bg-gray-100 text-gray-800"
-      _ -> "bg-gray-100 text-gray-800"
+      "create" -> "badge badge-success"
+      "read" -> "badge badge-info"
+      "update" -> "badge badge-warning"
+      "delete" -> "badge badge-error"
+      "list" -> "badge badge-ghost"
+      _ -> "badge badge-ghost"
     end
   end
 
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="h-full bg-gray-50">
-      <!-- Navigation Header -->
-      <nav class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between h-16">
-            <div class="flex items-center">
-              <.icon name="hero-lock-closed" class="h-8 w-8 text-indigo-600" />
-              <span class="ml-2 text-xl font-bold text-gray-900">VaultLite</span>
-            </div>
-
-            <div class="flex items-center space-x-4">
-              <span class="text-sm text-gray-700">Welcome, {@current_user.username}!</span>
-
-              <.link
-                navigate="/dashboard"
-                class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Dashboard
-              </.link>
-
-              <.link
-                href="/logout"
-                method="delete"
-                class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Logout
-              </.link>
-            </div>
-          </div>
-        </div>
-      </nav>
-      
-    <!-- Main Content -->
-      <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <!-- Page Header -->
-        <div class="md:flex md:items-center md:justify-between">
-          <div class="flex-1 min-w-0">
-            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-              Audit Logs
-            </h2>
-            <p class="mt-1 text-sm text-gray-500">
-              Monitor and review all system activities
-            </p>
-          </div>
-          <div class="mt-4 flex md:mt-0 md:ml-4">
-            <button
-              phx-click="refresh"
-              class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <.icon name="hero-arrow-path" class="h-4 w-4 mr-2" /> Refresh
-            </button>
-          </div>
-        </div>
-        
-    <!-- Statistics Cards -->
-        <div class="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-5">
-              <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <.icon name="hero-document-text" class="h-6 w-6 text-gray-400" />
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt class="text-sm font-medium text-gray-500 truncate">Total Logs</dt>
-                    <dd class="text-lg font-medium text-gray-900">
-                      {Map.get(@statistics, :total_logs, 0)}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-5">
-              <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <.icon name="hero-users" class="h-6 w-6 text-gray-400" />
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt class="text-sm font-medium text-gray-500 truncate">Active Users</dt>
-                    <dd class="text-lg font-medium text-gray-900">
-                      {Map.get(@statistics, :active_users, 0)}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-5">
-              <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <.icon name="hero-key" class="h-6 w-6 text-gray-400" />
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt class="text-sm font-medium text-gray-500 truncate">Top Secret</dt>
-                    <dd class="text-lg font-medium text-gray-900">
-                      {case Map.get(@statistics, :top_secrets, []) do
-                        [] -> "None"
-                        [top | _] -> top.secret_key
-                      end}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-5">
-              <div class="flex items-center">
-                <div class="flex-shrink-0">
-                  <.icon name="hero-chart-bar" class="h-6 w-6 text-gray-400" />
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt class="text-sm font-medium text-gray-500 truncate">Most Common Action</dt>
-                    <dd class="text-lg font-medium text-gray-900">
-                      {case Map.get(@statistics, :actions, %{}) do
-                        actions when map_size(actions) == 0 ->
-                          "None"
-
-                        actions ->
-                          {action, _count} = Enum.max_by(actions, fn {_k, v} -> v end)
-                          String.capitalize(action)
-                      end}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-    <!-- Search and Filters -->
-        <div class="mt-6 bg-white shadow rounded-lg">
-          <div class="px-4 py-5 sm:p-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Search & Filters</h3>
-            
-    <!-- Search Bar -->
-            <div class="mb-4">
-              <.form for={%{}} as={:search} phx-submit="search" class="flex">
-                <input
-                  type="text"
-                  name="search[query]"
-                  value={@search_query}
-                  placeholder="Search by secret key..."
-                  class="flex-1 border-gray-300 rounded-l-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
-                <button
-                  type="submit"
-                  class="px-4 py-2 bg-indigo-600 text-white rounded-r-md hover:bg-indigo-700"
-                >
-                  Search
-                </button>
-              </.form>
-            </div>
-            
-    <!-- Filters -->
-            <.form
-              for={%{}}
-              as={:filter}
-              phx-submit="filter"
-              class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5"
-            >
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Action</label>
-                <select
-                  name="filter[action]"
-                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                >
-                  <option value="">All Actions</option>
-                  <option value="create" selected={Map.get(@filters, :action) == "create"}>
-                    Create
-                  </option>
-                  <option value="read" selected={Map.get(@filters, :action) == "read"}>Read</option>
-                  <option value="update" selected={Map.get(@filters, :action) == "update"}>
-                    Update
-                  </option>
-                  <option value="delete" selected={Map.get(@filters, :action) == "delete"}>
-                    Delete
-                  </option>
-                  <option value="list" selected={Map.get(@filters, :action) == "list"}>List</option>
-                </select>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">User ID</label>
-                <input
-                  type="number"
-                  name="filter[user_id]"
-                  value={Map.get(@filters, :user_id, "")}
-                  placeholder="User ID"
-                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Secret Key</label>
-                <input
-                  type="text"
-                  name="filter[secret_key]"
-                  value={Map.get(@filters, :secret_key, "")}
-                  placeholder="Secret key"
-                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Start Date</label>
-                <input
-                  type="date"
-                  name="filter[start_date]"
-                  value={
-                    case Map.get(@filters, :start_date) do
-                      nil -> ""
-                      date -> Date.to_iso8601(DateTime.to_date(date))
-                    end
-                  }
-                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700">End Date</label>
-                <input
-                  type="date"
-                  name="filter[end_date]"
-                  value={
-                    case Map.get(@filters, :end_date) do
-                      nil -> ""
-                      date -> Date.to_iso8601(DateTime.to_date(date))
-                    end
-                  }
-                  class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div class="sm:col-span-2 lg:col-span-5 flex space-x-3">
-                <button
-                  type="submit"
-                  class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
-                >
-                  Apply Filters
-                </button>
-                <button
-                  type="button"
-                  phx-click="clear_filters"
-                  class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            </.form>
-          </div>
-        </div>
-        
-    <!-- Audit Logs Table -->
-        <div class="mt-6 bg-white shadow rounded-lg overflow-hidden">
-          <div class="px-4 py-5 sm:p-6">
-            <div class="flex justify-between items-center mb-4">
-              <h3 class="text-lg font-medium text-gray-900">Audit Logs</h3>
-              <span class="text-sm text-gray-500">
-                {length(@audit_logs)} of {@pagination.total} entries
-              </span>
-            </div>
-
-            <div :if={@loading} class="text-center py-8">
-              <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600">
-              </div>
-              <p class="mt-2 text-sm text-gray-500">Loading audit logs...</p>
-            </div>
-
-            <div :if={!@loading and length(@audit_logs) == 0} class="text-center py-8">
-              <.icon name="hero-document-text" class="mx-auto h-12 w-12 text-gray-400" />
-              <h3 class="mt-2 text-sm font-medium text-gray-900">No audit logs found</h3>
-              <p class="mt-1 text-sm text-gray-500">
-                Try adjusting your search criteria or filters.
+    <VaultLiteWeb.Layouts.app flash={@flash} current_user={@current_user}>
+      <div class="min-h-screen">
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <!-- Page Header -->
+          <div class="md:flex md:items-center md:justify-between">
+            <div class="flex-1 min-w-0">
+              <h2 class="text-2xl font-bold leading-7 sm:text-3xl sm:truncate">
+                Audit Logs
+              </h2>
+              <p class="mt-1 text-sm opacity-70">
+                Monitor and review all system activities
               </p>
             </div>
-
-            <div :if={!@loading and length(@audit_logs) > 0} class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Timestamp
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Action
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Secret Key
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Metadata
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                  <tr :for={log <- @audit_logs} class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {format_timestamp(log.timestamp)}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {log.user_id || "System"}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <span class={"inline-flex px-2 py-1 text-xs font-medium rounded-full #{action_badge_class(log.action)}"}>
-                        {String.capitalize(log.action)}
-                      </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
-                      {log.secret_key}
-                    </td>
-                    <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                      {format_metadata(log.metadata)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <div class="mt-4 flex md:mt-0 md:ml-4">
+              <button phx-click="refresh" class="btn btn-outline">
+                <.icon name="hero-arrow-path" class="h-4 w-4 mr-2" /> Refresh
+              </button>
             </div>
-            
-    <!-- Pagination -->
-            <div
-              :if={@pagination.total > @pagination.per_page}
-              class="mt-6 flex items-center justify-between"
-            >
-              <div class="flex-1 flex justify-between sm:hidden">
-                <button
-                  :if={@pagination.page > 1}
-                  phx-click="paginate"
-                  phx-value-page={@pagination.page - 1}
-                  class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  Previous
-                </button>
-                <button
-                  :if={@pagination.page * @pagination.per_page < @pagination.total}
-                  phx-click="paginate"
-                  phx-value-page={@pagination.page + 1}
-                  class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  Next
-                </button>
+          </div>
+          
+    <!-- Statistics Cards -->
+          <div class="stats shadow mt-6 w-full">
+            <div class="stat">
+              <div class="stat-figure">
+                <.icon name="hero-document-text" class="h-8 w-8" />
               </div>
-              <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p class="text-sm text-gray-700">
-                    Showing
-                    <span class="font-medium">
-                      {(@pagination.page - 1) * @pagination.per_page + 1}
-                    </span>
-                    to
-                    <span class="font-medium">
-                      {min(@pagination.page * @pagination.per_page, @pagination.total)}
-                    </span>
-                    of <span class="font-medium">{@pagination.total}</span>
-                    results
-                  </p>
-                </div>
-                <div>
-                  <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                    <button
-                      :if={@pagination.page > 1}
-                      phx-click="paginate"
-                      phx-value-page={@pagination.page - 1}
-                      class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                    >
-                      <.icon name="hero-chevron-left" class="h-5 w-5" />
-                    </button>
+              <div class="stat-title">Total Logs</div>
+              <div class="stat-value">{Map.get(@statistics, :total_logs, 0)}</div>
+            </div>
 
-                    <button
-                      :if={@pagination.page * @pagination.per_page < @pagination.total}
-                      phx-click="paginate"
-                      phx-value-page={@pagination.page + 1}
-                      class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-                    >
-                      <.icon name="hero-chevron-right" class="h-5 w-5" />
-                    </button>
-                  </nav>
+            <div class="stat">
+              <div class="stat-figure">
+                <.icon name="hero-users" class="h-8 w-8" />
+              </div>
+              <div class="stat-title">Active Users</div>
+              <div class="stat-value">{Map.get(@statistics, :active_users, 0)}</div>
+            </div>
+
+            <div class="stat">
+              <div class="stat-figure">
+                <.icon name="hero-key" class="h-8 w-8" />
+              </div>
+              <div class="stat-title">Top Secret</div>
+              <div class="stat-value text-sm">
+                {case Map.get(@statistics, :top_secrets, []) do
+                  [] -> "None"
+                  [top | _] -> top.secret_key
+                end}
+              </div>
+            </div>
+
+            <div class="stat">
+              <div class="stat-figure">
+                <.icon name="hero-chart-bar" class="h-8 w-8" />
+              </div>
+              <div class="stat-title">Most Common Action</div>
+              <div class="stat-value text-sm">
+                {case Map.get(@statistics, :actions, %{}) do
+                  actions when map_size(actions) == 0 ->
+                    "None"
+
+                  actions ->
+                    {action, _count} = Enum.max_by(actions, fn {_k, v} -> v end)
+                    String.capitalize(action)
+                end}
+              </div>
+            </div>
+          </div>
+          
+    <!-- Search and Filters -->
+          <div class="card bg-base-100 shadow mt-6">
+            <div class="card-body">
+              <h3 class="card-title">Search & Filters</h3>
+              
+    <!-- Search Bar -->
+              <div class="form-control">
+                <.form for={%{}} as={:search} phx-submit="search" class="input-group">
+                  <input
+                    type="text"
+                    name="search[query]"
+                    value={@search_query}
+                    placeholder="Search by secret key..."
+                    class="input input-bordered flex-1"
+                  />
+                  <button type="submit" class="btn btn-primary">
+                    Search
+                  </button>
+                </.form>
+              </div>
+              
+    <!-- Filters -->
+              <.form
+                for={%{}}
+                as={:filter}
+                phx-submit="filter"
+                class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5"
+              >
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text">Action</span>
+                  </label>
+                  <select name="filter[action]" class="select select-bordered">
+                    <option value="">All Actions</option>
+                    <option value="create" selected={Map.get(@filters, :action) == "create"}>
+                      Create
+                    </option>
+                    <option value="read" selected={Map.get(@filters, :action) == "read"}>Read</option>
+                    <option value="update" selected={Map.get(@filters, :action) == "update"}>
+                      Update
+                    </option>
+                    <option value="delete" selected={Map.get(@filters, :action) == "delete"}>
+                      Delete
+                    </option>
+                    <option value="list" selected={Map.get(@filters, :action) == "list"}>List</option>
+                  </select>
+                </div>
+
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text">User ID</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="filter[user_id]"
+                    value={Map.get(@filters, :user_id, "")}
+                    placeholder="User ID"
+                    class="input input-bordered"
+                  />
+                </div>
+
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text">Secret Key</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="filter[secret_key]"
+                    value={Map.get(@filters, :secret_key, "")}
+                    placeholder="Secret key"
+                    class="input input-bordered"
+                  />
+                </div>
+
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text">Start Date</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="filter[start_date]"
+                    value={
+                      case Map.get(@filters, :start_date) do
+                        nil -> ""
+                        date -> Date.to_iso8601(DateTime.to_date(date))
+                      end
+                    }
+                    class="input input-bordered"
+                  />
+                </div>
+
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text">End Date</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="filter[end_date]"
+                    value={
+                      case Map.get(@filters, :end_date) do
+                        nil -> ""
+                        date -> Date.to_iso8601(DateTime.to_date(date))
+                      end
+                    }
+                    class="input input-bordered"
+                  />
+                </div>
+
+                <div class="sm:col-span-2 lg:col-span-5 flex gap-3">
+                  <button type="submit" class="btn btn-primary">
+                    Apply Filters
+                  </button>
+                  <button type="button" phx-click="clear_filters" class="btn btn-outline">
+                    Clear Filters
+                  </button>
+                </div>
+              </.form>
+            </div>
+          </div>
+          
+    <!-- Audit Logs Table -->
+          <div class="card bg-base-100 shadow mt-6">
+            <div class="card-body">
+              <div class="flex justify-between items-center mb-4">
+                <h3 class="card-title">Audit Logs</h3>
+                <span class="text-sm opacity-70">
+                  {length(@audit_logs)} of {@pagination.total} entries
+                </span>
+              </div>
+
+              <div :if={@loading} class="text-center py-8">
+                <span class="loading loading-spinner loading-lg"></span>
+                <p class="mt-2 text-sm opacity-70">Loading audit logs...</p>
+              </div>
+
+              <div :if={!@loading and length(@audit_logs) == 0} class="text-center py-8">
+                <.icon name="hero-document-text" class="mx-auto h-12 w-12" />
+                <h3 class="mt-2 text-sm font-medium">No audit logs found</h3>
+                <p class="mt-1 text-sm opacity-70">
+                  Try adjusting your search criteria or filters.
+                </p>
+              </div>
+
+              <div :if={!@loading and length(@audit_logs) > 0} class="overflow-x-auto">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Timestamp</th>
+                      <th>User</th>
+                      <th>Action</th>
+                      <th>Secret Key</th>
+                      <th>Metadata</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr :for={log <- @audit_logs} class="hover">
+                      <td class="font-mono text-sm">
+                        {format_timestamp(log.timestamp)}
+                      </td>
+                      <td>
+                        {log.user_id || "System"}
+                      </td>
+                      <td>
+                        <div class={get_action_badge_class(log.action)}>
+                          {String.capitalize(log.action)}
+                        </div>
+                      </td>
+                      <td class="font-mono">
+                        {log.secret_key}
+                      </td>
+                      <td class="max-w-xs truncate">
+                        {format_metadata(log.metadata)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              
+    <!-- Pagination -->
+              <div
+                :if={@pagination.total > @pagination.per_page}
+                class="flex items-center justify-between mt-6"
+              >
+                <div class="flex-1 flex justify-between sm:hidden">
+                  <button
+                    :if={@pagination.page > 1}
+                    phx-click="paginate"
+                    phx-value-page={@pagination.page - 1}
+                    class="btn btn-outline"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    :if={@pagination.page * @pagination.per_page < @pagination.total}
+                    phx-click="paginate"
+                    phx-value-page={@pagination.page + 1}
+                    class="btn btn-outline"
+                  >
+                    Next
+                  </button>
+                </div>
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                  <div>
+                    <p class="text-sm opacity-70">
+                      Showing
+                      <span class="font-medium">
+                        {(@pagination.page - 1) * @pagination.per_page + 1}
+                      </span>
+                      to
+                      <span class="font-medium">
+                        {min(@pagination.page * @pagination.per_page, @pagination.total)}
+                      </span>
+                      of <span class="font-medium">{@pagination.total}</span>
+                      results
+                    </p>
+                  </div>
+                  <div>
+                    <div class="btn-group">
+                      <button
+                        :if={@pagination.page > 1}
+                        phx-click="paginate"
+                        phx-value-page={@pagination.page - 1}
+                        class="btn btn-outline"
+                      >
+                        <.icon name="hero-chevron-left" class="h-5 w-5" />
+                      </button>
+
+                      <button
+                        :if={@pagination.page * @pagination.per_page < @pagination.total}
+                        phx-click="paginate"
+                        phx-value-page={@pagination.page + 1}
+                        class="btn btn-outline"
+                      >
+                        <.icon name="hero-chevron-right" class="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </VaultLiteWeb.Layouts.app>
     """
   end
 end
