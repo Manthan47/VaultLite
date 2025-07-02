@@ -1,4 +1,7 @@
 defmodule VaultLiteWeb.FallbackController do
+  @moduledoc """
+  Fallback controller for handling errors.
+  """
   use VaultLiteWeb, :controller
 
   @doc """

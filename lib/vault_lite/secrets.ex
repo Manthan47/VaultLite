@@ -9,10 +9,15 @@ defmodule VaultLite.Secrets do
   - Integration with audit logging
   - Support for both role-based and personal secrets
   """
-
   import Ecto.Query, warn: false
+
+  alias VaultLite.Audit
+  alias VaultLite.Auth
+  alias VaultLite.Encryption
   alias VaultLite.Repo
-  alias VaultLite.{Secret, User, Audit, Encryption, Auth, SecretSharing}
+  alias VaultLite.Secret
+  alias VaultLite.SecretSharing
+  alias VaultLite.User
 
   @doc """
   Creates a new encrypted secret with version 1.

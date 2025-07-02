@@ -1,9 +1,15 @@
 defmodule VaultLiteWeb.AuthController do
+  @moduledoc """
+  Controller for managing user authentication and authorization.
+  """
   use VaultLiteWeb, :controller
 
-  alias VaultLite.{User, Repo, Guardian}
-  alias Ecto.Changeset
   import VaultLiteWeb.AuthPlug, only: [log_out_user: 1, log_in_user: 2]
+
+  alias Ecto.Changeset
+  alias VaultLite.Guardian
+  alias VaultLite.Repo
+  alias VaultLite.User
 
   action_fallback VaultLiteWeb.FallbackController
 

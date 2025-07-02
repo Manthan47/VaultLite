@@ -1,4 +1,7 @@
 defmodule VaultLiteWeb.SecretController do
+  @moduledoc """
+  Controller for managing secrets.
+  """
   use VaultLiteWeb, :controller
 
   alias VaultLite.Secrets

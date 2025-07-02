@@ -6,7 +6,9 @@ defmodule VaultLiteWeb.AdminLive.AuditLogLive do
   """
   use VaultLiteWeb, :live_view
 
-  alias VaultLite.{Audit, User, Auth}
+  alias VaultLite.Audit
+  alias VaultLite.Auth
+  alias VaultLite.User
 
   @impl true
   def mount(_params, session, socket) do

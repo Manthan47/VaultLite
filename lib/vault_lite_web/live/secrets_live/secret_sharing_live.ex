@@ -1,6 +1,13 @@
 defmodule VaultLiteWeb.SecretsLive.SecretSharingLive do
+  @moduledoc """
+  This module is responsible for the secret sharing live view.
+  - displays the secret sharing form and allows the user to share the secret with other users.
+  - displays the current shares and allows the user to revoke the shares.
+  """
   use VaultLiteWeb, :live_view
-  alias VaultLite.{SecretSharing, Auth}
+
+  alias VaultLite.Auth
+  alias VaultLite.SecretSharing
 
   @impl true
   def mount(%{"secret_key" => secret_key}, session, socket) do

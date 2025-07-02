@@ -8,7 +8,8 @@ defmodule VaultLiteWeb.DashboardLive.SecretDashboardLive do
   """
   use VaultLiteWeb, :live_view
 
-  alias VaultLite.{Secrets, User}
+  alias VaultLite.Secrets
+  alias VaultLite.User
 
   @impl true
   def mount(_params, session, socket) do

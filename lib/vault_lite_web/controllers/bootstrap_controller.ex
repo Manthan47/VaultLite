@@ -1,8 +1,13 @@
 defmodule VaultLiteWeb.BootstrapController do
+  @moduledoc """
+  Controller for managing system bootstrap and setup.
+  """
   use VaultLiteWeb, :controller
 
-  alias VaultLite.{User, Role, Repo}
   alias Ecto.Changeset
+  alias VaultLite.Repo
+  alias VaultLite.Role
+  alias VaultLite.User
 
   action_fallback VaultLiteWeb.FallbackController
 

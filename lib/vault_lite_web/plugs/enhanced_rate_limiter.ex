@@ -11,7 +11,30 @@ defmodule VaultLiteWeb.Plugs.EnhancedRateLimiter do
   """
 
   import Plug.Conn
+
   require Logger
+
+  @scanner_patterns [
+    # Path traversal
+    ~r/\.\./,
+    # SQL injection
+    ~r/\bselect\b.*\bfrom\b/i,
+    # XSS attempts
+    ~r/<script/i,
+    # Bot detection
+    ~r/bot|crawler|spider/i
+  ]
+
+  @injection_patterns [
+    # SQL injection
+    ~r/['"]\s*(or|and)\s*['"]/i,
+    # XSS
+    ~r/<script|javascript:/i,
+    # Path traversal
+    ~r/\.\./,
+    # Null byte injection
+    ~r/\x00/
+  ]
 
   @doc """
   Initializes the plug with configuration options.
@@ -248,18 +271,7 @@ defmodule VaultLiteWeb.Plugs.EnhancedRateLimiter do
     path = Enum.join(conn.path_info, "/")
     user_agent = get_req_header(conn, "user-agent") |> List.first() || ""
 
-    scanner_patterns = [
-      # Path traversal
-      ~r/\.\./,
-      # SQL injection
-      ~r/\bselect\b.*\bfrom\b/i,
-      # XSS attempts
-      ~r/<script/i,
-      # Bot detection
-      ~r/bot|crawler|spider/i
-    ]
-
-    Enum.any?(scanner_patterns, fn pattern ->
+    Enum.any?(@scanner_patterns, fn pattern ->
       Regex.match?(pattern, path) || Regex.match?(pattern, user_agent)
     end)
   end
@@ -268,22 +280,11 @@ defmodule VaultLiteWeb.Plugs.EnhancedRateLimiter do
     query_string = conn.query_string
     body_params = conn.body_params
 
-    injection_patterns = [
-      # SQL injection
-      ~r/['"]\s*(or|and)\s*['"]/i,
-      # XSS
-      ~r/<script|javascript:/i,
-      # Path traversal
-      ~r/\.\./,
-      # Null byte injection
-      ~r/\x00/
-    ]
-
     all_input = [query_string | Map.values(body_params)]
 
     Enum.any?(all_input, fn input ->
       if is_binary(input) do
-        Enum.any?(injection_patterns, &Regex.match?(&1, input))
+        Enum.any?(@injection_patterns, &Regex.match?(&1, input))
       else
         false
       end

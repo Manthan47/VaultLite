@@ -10,7 +10,6 @@ defmodule VaultLite.Security.InputValidator do
   - Oversized payloads
   - Malicious control characters
   """
-
   import Ecto.Changeset
 
   @valid_actions [
@@ -31,6 +30,48 @@ defmodule VaultLite.Security.InputValidator do
     "purge_logs",
     "secret_share",
     "secret_revoke"
+  ]
+
+  @valid_permissions ["read", "write", "delete", "admin"]
+
+  @weak_passwords [
+    "password",
+    "123456",
+    "12345678",
+    "qwerty",
+    "abc123",
+    "password123",
+    "admin",
+    "letmein",
+    "welcome",
+    "monkey"
+  ]
+
+  @suspicious_patterns [
+    # IP addresses
+    ~r/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/,
+    # Suspicious TLDs
+    ~r/\.tk$|\.ml$|\.ga$|\.cf$/,
+    # Localhost domains
+    ~r/localhost/i
+  ]
+
+  @forbidden_key_patterns [
+    # Path traversal
+    ~r/\.\./,
+    # HTML/SQL injection characters
+    ~r/[<>\"'&]/,
+    # Null bytes
+    ~r/\x00/,
+    # Control characters
+    ~r/[\x01-\x1f\x7f]/
+  ]
+
+  @dangerous_patterns [
+    "..",
+    "//",
+    "\\",
+    "\0"
   ]
 
   @doc """
@@ -136,12 +177,10 @@ defmodule VaultLite.Security.InputValidator do
   Validates permissions array.
   """
   def validate_permissions(changeset, field \\ :permissions) do
-    valid_permissions = ["read", "write", "delete", "admin"]
-
     changeset
     |> validate_required([field])
     |> validate_permissions_format(field)
-    |> validate_inclusion_list(field, valid_permissions)
+    |> validate_inclusion_list(field, @valid_permissions)
     |> validate_permissions_not_empty(field)
   end
 
@@ -158,18 +197,7 @@ defmodule VaultLite.Security.InputValidator do
 
   defp validate_no_path_traversal(changeset, field) do
     validate_change(changeset, field, fn field, value ->
-      dangerous_patterns = [
-        # Path traversal
-        "..",
-        # Double slashes
-        "//",
-        # Windows path separators
-        "\\",
-        # Null bytes
-        "\0"
-      ]
-
-      if Enum.any?(dangerous_patterns, &String.contains?(value, &1)) do
+      if Enum.any?(@dangerous_patterns, &String.contains?(value, &1)) do
         [{field, "contains dangerous path traversal patterns"}]
       else
         []
@@ -180,16 +208,7 @@ defmodule VaultLite.Security.InputValidator do
   defp validate_no_dangerous_patterns(changeset, field) do
     validate_change(changeset, field, fn field, value ->
       forbidden_patterns =
-        get_config(:forbidden_key_patterns, [
-          # Path traversal
-          ~r/\.\./,
-          # HTML/SQL injection characters
-          ~r/[<>\"'&]/,
-          # Null bytes
-          ~r/\x00/,
-          # Control characters
-          ~r/[\x01-\x1f\x7f]/
-        ])
+        get_config(:forbidden_key_patterns, @forbidden_key_patterns)
 
       dangerous_pattern = Enum.find(forbidden_patterns, &Regex.match?(&1, value))
 
@@ -264,17 +283,7 @@ defmodule VaultLite.Security.InputValidator do
     validate_change(changeset, field, fn field, email ->
       domain = email |> String.split("@") |> List.last()
 
-      # Check for suspicious domain patterns
-      suspicious_patterns = [
-        # IP addresses
-        ~r/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/,
-        # Suspicious TLDs
-        ~r/\.tk$|\.ml$|\.ga$|\.cf$/,
-        # Localhost domains
-        ~r/localhost/i
-      ]
-
-      if Enum.any?(suspicious_patterns, &Regex.match?(&1, domain)) do
+      if Enum.any?(@suspicious_patterns, &Regex.match?(&1, domain)) do
         [{field, "domain is not allowed"}]
       else
         []
@@ -316,21 +325,7 @@ defmodule VaultLite.Security.InputValidator do
 
   defp validate_password_security(changeset, field) do
     validate_change(changeset, field, fn field, password ->
-      # Check for common weak passwords
-      weak_passwords = [
-        "password",
-        "123456",
-        "12345678",
-        "qwerty",
-        "abc123",
-        "password123",
-        "admin",
-        "letmein",
-        "welcome",
-        "monkey"
-      ]
-
-      if String.downcase(password) in weak_passwords do
+      if String.downcase(password) in @weak_passwords do
         [{field, "is too common and insecure"}]
       else
         []

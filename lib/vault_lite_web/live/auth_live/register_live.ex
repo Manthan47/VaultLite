@@ -6,7 +6,7 @@ defmodule VaultLiteWeb.AuthLive.RegisterLive do
   """
   use VaultLiteWeb, :live_view
 
-  alias VaultLite.{Auth}
+  alias VaultLite.Auth
 
   @impl true
   def mount(_params, _session, socket) do

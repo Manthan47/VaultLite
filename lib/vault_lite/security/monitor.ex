@@ -8,12 +8,15 @@ defmodule VaultLite.Security.Monitor do
   - Security metrics collection
   - Integration with external monitoring systems
   """
-
   use GenServer
+
   require Logger
+
   import Ecto.Query
-  alias VaultLite.{Audit, Repo}
+
+  alias VaultLite.Audit
   alias VaultLite.AuditLog
+  alias VaultLite.Repo
 
   @doc """
   Starts the security monitor.
