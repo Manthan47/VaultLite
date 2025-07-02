@@ -12,7 +12,26 @@ defmodule VaultLite.Security.InputValidator do
   """
 
   import Ecto.Changeset
-  require Logger
+
+  @valid_actions [
+    "create",
+    "read",
+    "update",
+    "delete",
+    "list",
+    "assign_role",
+    "revoke_role",
+    "create_user",
+    "authenticate",
+    "failed_authentication",
+    "update_role",
+    "access_check",
+    "system",
+    "system_cleanup",
+    "purge_logs",
+    "secret_share",
+    "secret_revoke"
+  ]
 
   @doc """
   Validates and sanitizes secret key input.
@@ -39,111 +58,22 @@ defmodule VaultLite.Security.InputValidator do
   Note: Control character validation is skipped for encrypted values.
   """
   def validate_secret_value(changeset, field \\ :value) do
-    # 1MB default
     max_size = get_config(:max_secret_size, 1_048_576)
 
     changeset
     |> validate_required([field])
     |> validate_secret_value_size(field, max_size)
-
-    # Skip control character validation for encrypted binary data
   end
 
   @doc """
   Validates and sanitizes metadata input.
   """
   def validate_metadata(changeset, field \\ :metadata) do
-    # 10KB default
     max_size = get_config(:max_metadata_size, 10_240)
-    # Be more permissive with metadata keys to avoid breaking system functionality
-    # This list includes all common metadata keys used by the system
-    # allowed_keys =
-    #   get_config(:allowed_metadata_keys, [
-    #     # User-defined metadata
-    #     "description",
-    #     "environment",
-    #     "created_by",
-    #     "updated_by",
-    #     "tags",
-    #     "category",
-    #     "title",
-    #     "notes",
-    #     "project",
-    #     "owner",
-    #     "status",
-    #     "priority",
-    #     "type",
-
-    #     # System-generated audit and logging metadata (string and atom versions)
-    #     "application",
-    #     :application,
-    #     "logged_at",
-    #     :logged_at,
-    #     "timestamp",
-    #     :timestamp,
-    #     "user_id",
-    #     :user_id,
-    #     "ip",
-    #     :ip,
-    #     "user_agent",
-    #     :user_agent,
-    #     "request_id",
-    #     :request_id,
-    #     "event_type",
-    #     :event_type,
-    #     "severity",
-    #     :severity,
-    #     "source",
-    #     :source,
-    #     "version",
-    #     :version,
-    #     "old_value",
-    #     :old_value,
-    #     "new_value",
-    #     :new_value,
-    #     "new_version",
-    #     :new_version,
-    #     "old_version",
-    #     :old_version,
-    #     "versions_deleted",
-    #     :versions_deleted,
-    #     "count",
-    #     :count,
-    #     "keys",
-    #     :keys,
-    #     "action_type",
-    #     :action_type,
-    #     "resource",
-    #     :resource,
-    #     "method",
-    #     :method,
-    #     "status_code",
-    #     :status_code,
-    #     "duration",
-    #     :duration,
-    #     "error",
-    #     :error,
-    #     "session_id",
-    #     :session_id,
-    #     "correlation_id",
-    #     :correlation_id,
-
-    #     # Security-related metadata
-    #     "security_level",
-    #     :security_level,
-    #     "access_level",
-    #     :access_level,
-    #     "encryption_method",
-    #     :encryption_method,
-    #     "key_id",
-    #     :key_id
-    #   ])
 
     changeset
     |> validate_metadata_structure(field)
     |> validate_metadata_size(field, max_size)
-    # TODO: Remove this in future
-    # |> validate_metadata_keys(field, allowed_keys)
     |> sanitize_metadata_values(field)
   end
 
@@ -219,27 +149,9 @@ defmodule VaultLite.Security.InputValidator do
   Validates action strings for audit logs.
   """
   def validate_action(changeset, field \\ :action) do
-    valid_actions = [
-      "create",
-      "read",
-      "update",
-      "delete",
-      "list",
-      "assign_role",
-      "revoke_role",
-      "create_user",
-      "authenticate",
-      "failed_authentication",
-      "update_role",
-      "access_check",
-      "system",
-      "system_cleanup",
-      "purge_logs"
-    ]
-
     changeset
     |> validate_required([field])
-    |> validate_inclusion(field, valid_actions)
+    |> validate_inclusion(field, @valid_actions)
   end
 
   # Private validation functions
@@ -329,28 +241,6 @@ defmodule VaultLite.Security.InputValidator do
       end
     end)
   end
-
-  # TODO: Remove this in future
-  # defp validate_metadata_keys(changeset, field, allowed_keys) do
-  #   validate_change(changeset, field, fn field, value ->
-  #     case value do
-  #       nil ->
-  #         []
-
-  #       metadata when is_map(metadata) ->
-  #         invalid_keys = Map.keys(metadata) -- allowed_keys
-
-  #         if Enum.empty?(invalid_keys) do
-  #           []
-  #         else
-  #           [{field, "contains invalid keys: #{Enum.join(invalid_keys, ", ")}"}]
-  #         end
-
-  #       _ ->
-  #         []
-  #     end
-  #   end)
-  # end
 
   defp sanitize_metadata_values(changeset, field) do
     case get_change(changeset, field) do

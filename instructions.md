@@ -404,6 +404,77 @@ Ensure environment variables include ENCRYPTION_KEY and database credentials.
 
 ---
 
+### Task 11: Secret Sharing Implementation
+**Goal**: Enable users to share their personal secrets with other users, supporting two permission levels (read-only and editable), with clear sharing status display on the dashboard.
+
+#### Subtasks
+1. **Database Schema Changes**:
+   - Create `secret_shares` table to track sharing relationships.
+   - Add fields for secret_key, owner_id, shared_with_id, permission_level, and timestamps.
+   - Implement proper indexes and constraints.
+2. **Context Layer Implementation**:
+   - Create `VaultLite.SecretSharing` context for sharing operations.
+   - Update `VaultLite.Secrets` context to handle shared secret access.
+   - Implement permission validation and audit logging.
+3. **API Endpoints**:
+   - Create sharing controller with share/revoke functionality.
+   - Add REST endpoints for managing shares.
+   - Implement proper authorization checks.
+4. **LiveView UI Enhancement**:
+   - Create secret sharing management interface.
+   - Update dashboard to display sharing status and ownership.
+   - Add sharing controls to secret actions menu.
+5. **Security and Testing**:
+   - Implement comprehensive authorization checks.
+   - Add audit logging for all sharing operations.
+   - Create comprehensive test suite.
+
+#### AI Prompt
+```plaintext
+Generate secret sharing functionality for VaultLite project. Create:
+
+1. Database Migration and Schema:
+   - secret_shares table with proper relationships and constraints
+   - SecretShare schema with validations for permission levels ("read_only", "editable")
+   - Proper indexes for efficient querying
+
+2. Context Layer:
+   - VaultLite.SecretSharing context with share_secret, revoke_sharing, list_shared_secrets functions
+   - Update VaultLite.Secrets to handle shared secret access with permission checking
+   - Integration with existing audit logging system
+
+3. REST API:
+   - SecretSharingController with endpoints for sharing operations
+   - Proper Guardian authentication and authorization
+   - JSON responses with error handling
+
+4. LiveView UI:
+   - SecretSharingLive for managing shares of a specific secret
+   - Update SecretDashboardLive to show sharing status with badges and filters
+   - Sharing form with username input and permission level selection
+   - Current shares table with revoke functionality
+
+5. Security Features:
+   - Only personal secret owners can share their secrets
+   - Permission-based access control (read_only vs editable)
+   - Comprehensive audit logging for all sharing operations
+   - Prevention of self-sharing and proper validation
+
+6. Dashboard Integration:
+   - Display who shared each secret with current user
+   - Visual indicators for shared secrets vs personal/role-based
+   - Filter options to view: all secrets, personal only, shared with me
+   - Share management buttons in secret action menus
+
+Integration Requirements:
+- Use existing VaultLite schemas and contexts
+- Maintain compatibility with personal and role-based secrets
+- Follow existing UI patterns with Tailwind CSS and DaisyUI
+- Integrate with existing authentication and authorization systems
+```
+
+---
+
 ## Development Workflow with AI Tools
 1. **Use AI for Code Generation**:
    - Copy each AI prompt into Cursor or GitHub Copilot.
@@ -425,6 +496,7 @@ Ensure environment variables include ENCRYPTION_KEY and database credentials.
 - **Week 3**: Task 5 (API), Task 6 (Audit Logging)
 - **Week 4**: Task 7 (Testing), Task 8 (Security)
 - **Week 5**: Task 9 (Phoenix LiveView UI), Task 10 (Deployment), Final Testing, and Documentation
+- **Week 6**: Task 11 (Secret Sharing Implementation), Extended Testing, and Documentation Updates
 
 ---
 

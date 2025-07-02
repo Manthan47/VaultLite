@@ -59,6 +59,7 @@ defmodule VaultLiteWeb.Router do
     live "/secrets/:key", SecretsLive.SecretDetailLive, :show
     live "/secrets/:key/edit", SecretsLive.SecretFormLive, :edit
     live "/secrets/:key/versions", SecretsLive.SecretDetailLive, :versions
+    live "/secrets/:secret_key/share", SecretsLive.SecretSharingLive, :show
 
     # Admin routes
     live "/admin/users", AdminLive.UserManagementLive, :index
@@ -86,6 +87,18 @@ defmodule VaultLiteWeb.Router do
 
     get "/secrets/:key/versions", SecretController, :versions
     get "/secrets/:key/versions/:version", SecretController, :show_version
+
+    # Secret sharing endpoints
+    post "/secrets/:secret_key/share", SecretSharingController, :share_secret
+
+    delete "/secrets/:secret_key/share/:shared_with_username",
+           SecretSharingController,
+           :revoke_sharing
+
+    get "/secrets/:secret_key/shares", SecretSharingController, :get_secret_shares
+    get "/secrets/:secret_key/permission", SecretSharingController, :check_permission
+    get "/shared/with-me", SecretSharingController, :list_shared_with_me
+    get "/shared/by-me", SecretSharingController, :list_my_shares
 
     # Role management endpoints
     resources "/roles", RoleController, only: [:create, :index, :show]

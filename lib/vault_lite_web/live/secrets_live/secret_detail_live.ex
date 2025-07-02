@@ -58,6 +58,13 @@ defmodule VaultLiteWeb.SecretsLive.SecretDetailLive do
   end
 
   @impl true
+  def handle_event("copy_secret_value", _, socket) do
+    # JavaScript handles the actual copying, this just provides user feedback
+    socket = put_flash(socket, :info, "Secret value copied to clipboard!")
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("load_version", %{"version" => version_str}, socket) do
     case Integer.parse(version_str) do
       {version, ""} ->
@@ -152,34 +159,113 @@ defmodule VaultLiteWeb.SecretsLive.SecretDetailLive do
     Calendar.strftime(datetime, "%Y-%m-%d %H:%M:%S")
   end
 
-  defp secret_type_badge(secret_type) do
-    case secret_type do
-      "personal" ->
+  defp secret_type_badge(secret) do
+    cond do
+      # Handle string secret type (for version history)
+      is_binary(secret) ->
+        case secret do
+          "personal" ->
+            {"Personal", "bg-blue-100 text-blue-800"}
+
+          "role_based" ->
+            {"Role-based", "bg-green-100 text-green-800"}
+
+          _ ->
+            {"Unknown", "bg-gray-100 text-gray-800"}
+        end
+
+      # Handle full secret map - check for shared secrets first
+      is_map(secret) && Map.get(secret, :is_shared, false) ->
+        permission = Map.get(secret, :permission_level, "read_only")
+
+        if permission == "editable" do
+          {"Shared (Editable)", "bg-purple-100 text-purple-800"}
+        else
+          {"Shared (Read-only)", "bg-purple-100 text-purple-800"}
+        end
+
+      # Handle full secret map - personal secrets
+      is_map(secret) && secret.secret_type == "personal" ->
         {"Personal", "bg-blue-100 text-blue-800"}
 
-      "role_based" ->
+      # Handle full secret map - role-based secrets
+      is_map(secret) && secret.secret_type == "role_based" ->
         {"Role-based", "bg-green-100 text-green-800"}
 
-      _ ->
+      # Default case
+      true ->
         {"Unknown", "bg-gray-100 text-gray-800"}
     end
   end
 
   defp get_owner_info(secret, current_user) do
-    case secret.secret_type do
-      "personal" ->
-        if secret.owner_id == current_user.id do
-          {"You (Personal Secret)", "text-blue-600"}
-        else
-          # This shouldn't happen due to access control, but just in case
-          {"Unknown User", "text-gray-600"}
-        end
+    cond do
+      # Check if this is a shared secret
+      Map.get(secret, :is_shared, false) ->
+        shared_by = Map.get(secret, :shared_by, "Unknown User")
+        permission = Map.get(secret, :permission_level, "read_only")
+        permission_text = String.replace(permission, "_", " ") |> String.capitalize()
+        {"Shared by #{shared_by} (#{permission_text})", "text-purple-600"}
 
-      "role_based" ->
+      # Personal secret owned by current user
+      secret.secret_type == "personal" && secret.owner_id == current_user.id ->
+        {"You (Personal Secret)", "text-blue-600"}
+
+      # Personal secret owned by someone else (shouldn't happen with proper access control)
+      secret.secret_type == "personal" ->
+        {"Personal Secret (Not Owned)", "text-gray-600"}
+
+      # Role-based secret
+      secret.secret_type == "role_based" ->
         {"Shared via Roles", "text-green-600"}
 
-      _ ->
+      # Default case
+      true ->
         {"Unknown", "text-gray-600"}
+    end
+  end
+
+  defp can_edit_secret?(secret, current_user) do
+    cond do
+      # Shared secret - check permission level
+      Map.get(secret, :is_shared, false) ->
+        Map.get(secret, :permission_level) == "editable"
+
+      # Personal secret - must be owner
+      secret.secret_type == "personal" ->
+        secret.owner_id == current_user.id
+
+      # Role-based secret - use existing role authorization (simplified for now)
+      secret.secret_type == "role_based" ->
+        true
+
+      # Default case
+      true ->
+        false
+    end
+  end
+
+  defp get_secret_description(secret) do
+    cond do
+      Map.get(secret, :is_shared, false) ->
+        shared_by = Map.get(secret, :shared_by, "Unknown User")
+        permission = Map.get(secret, :permission_level, "read_only")
+        permission_text = String.replace(permission, "_", " ") |> String.downcase()
+
+        if permission == "editable" do
+          "This secret was shared with you by #{shared_by} with #{permission_text} permissions. You can view and modify it."
+        else
+          "This secret was shared with you by #{shared_by} with #{permission_text} permissions. You can only view it."
+        end
+
+      secret.secret_type == "personal" ->
+        "This secret is private to you and not shared with other users"
+
+      secret.secret_type == "role_based" ->
+        "This secret's access is controlled by role-based permissions"
+
+      true ->
+        "Unknown secret type"
     end
   end
 
@@ -227,24 +313,29 @@ defmodule VaultLiteWeb.SecretsLive.SecretDetailLive do
                   <div>
                     <div class="flex items-center gap-3">
                       <h2 class="card-title">Secret Details</h2>
-                      <% {badge_text, _badge_class} = secret_type_badge(@secret.secret_type) %>
+                      <% {badge_text, _badge_class} = secret_type_badge(@secret) %>
                       <div class="badge badge-outline">{badge_text}</div>
-                      <%= if @secret.secret_type == "personal" do %>
-                        <.icon name="hero-user" class="h-5 w-5" />
-                      <% else %>
-                        <.icon name="hero-key" class="h-5 w-5" />
+                      <%= cond do %>
+                        <% Map.get(@secret, :is_shared, false) -> %>
+                          <.icon name="hero-share" class="h-5 w-5" />
+                        <% @secret.secret_type == "personal" -> %>
+                          <.icon name="hero-user" class="h-5 w-5" />
+                        <% true -> %>
+                          <.icon name="hero-key" class="h-5 w-5" />
                       <% end %>
                     </div>
                     <p class="opacity-70">Key: {@secret.key}</p>
                   </div>
                   <div class="flex gap-2">
-                    <.link
-                      navigate={"/secrets/#{@secret.key}/edit"}
-                      class="btn btn-ghost btn-sm"
-                      title="Edit secret"
-                    >
-                      <.icon name="hero-pencil" class="h-4 w-4" />
-                    </.link>
+                    <%= if can_edit_secret?(@secret, @current_user) do %>
+                      <.link
+                        navigate={"/secrets/#{@secret.key}/edit"}
+                        class="btn btn-ghost btn-sm"
+                        title="Edit secret"
+                      >
+                        <.icon name="hero-pencil" class="h-4 w-4" />
+                      </.link>
+                    <% end %>
                     <.link
                       navigate={"/secrets/#{@secret.key}/versions"}
                       class="btn btn-ghost btn-sm"
@@ -255,7 +346,7 @@ defmodule VaultLiteWeb.SecretsLive.SecretDetailLive do
                   </div>
                 </div>
 
-                <div class="overflow-x-auto">
+                <div class="">
                   <table class="table">
                     <tbody>
                       <tr>
@@ -263,15 +354,9 @@ defmodule VaultLiteWeb.SecretsLive.SecretDetailLive do
                         <td>
                           <% {owner_text, _owner_class} = get_owner_info(@secret, @current_user) %>
                           <span>{owner_text}</span>
-                          <%= if @secret.secret_type == "personal" do %>
-                            <p class="text-xs opacity-70 mt-1">
-                              This secret is private to you and not shared with other users
-                            </p>
-                          <% else %>
-                            <p class="text-xs opacity-70 mt-1">
-                              This secret's access is controlled by role-based permissions
-                            </p>
-                          <% end %>
+                          <p class="text-xs opacity-70 mt-1">
+                            {get_secret_description(@secret)}
+                          </p>
                         </td>
                       </tr>
 
@@ -297,12 +382,26 @@ defmodule VaultLiteWeb.SecretsLive.SecretDetailLive do
                                 </div>
                               <% end %>
                             </div>
-                            <button phx-click="toggle_value" class="btn btn-ghost btn-sm">
-                              <.icon
-                                name={if(@show_value, do: "hero-eye-slash", else: "hero-eye")}
-                                class="h-4 w-4"
-                              />
-                            </button>
+                            <div class="flex gap-1">
+                              <button
+                                phx-click="copy_secret_value"
+                                class="btn btn-ghost btn-sm tooltip"
+                                data-tip="Copy to clipboard"
+                                onclick={"copyToClipboard('#{String.replace(@secret.value, "'", "\\'")}', this)"}
+                              >
+                                <.icon name="hero-clipboard-document" class="h-4 w-4" />
+                              </button>
+                              <button
+                                phx-click="toggle_value"
+                                class="btn btn-ghost btn-sm tooltip"
+                                data-tip="Toggle visibility"
+                              >
+                                <.icon
+                                  name={if(@show_value, do: "hero-eye-slash", else: "hero-eye")}
+                                  class="h-4 w-4"
+                                />
+                              </button>
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -404,7 +503,7 @@ defmodule VaultLiteWeb.SecretsLive.SecretDetailLive do
                 <div class="flex items-center gap-3 mb-4">
                   <h3 class="text-lg font-medium">Version {[@secret.version]} Details</h3>
                   <%= if @secret.secret_type do %>
-                    <% {badge_text, _badge_class} = secret_type_badge(@secret.secret_type) %>
+                    <% {badge_text, _badge_class} = secret_type_badge(@secret) %>
                     <div class="badge badge-outline">{badge_text}</div>
                   <% end %>
                 </div>
@@ -427,12 +526,26 @@ defmodule VaultLiteWeb.SecretsLive.SecretDetailLive do
                                 </div>
                               <% end %>
                             </div>
-                            <button phx-click="toggle_value" class="btn btn-ghost btn-sm">
-                              <.icon
-                                name={if(@show_value, do: "hero-eye-slash", else: "hero-eye")}
-                                class="h-4 w-4"
-                              />
-                            </button>
+                            <div class="flex gap-1">
+                              <button
+                                phx-click="copy_secret_value"
+                                class="btn btn-ghost btn-sm tooltip"
+                                data-tip="Copy to clipboard"
+                                onclick={"copyToClipboard('#{String.replace(@secret.value, "'", "\\'")}', this)"}
+                              >
+                                <.icon name="hero-clipboard-document" class="h-4 w-4" />
+                              </button>
+                              <button
+                                phx-click="toggle_value"
+                                class="btn btn-ghost btn-sm tooltip"
+                                data-tip="Toggle visibility"
+                              >
+                                <.icon
+                                  name={if(@show_value, do: "hero-eye-slash", else: "hero-eye")}
+                                  class="h-4 w-4"
+                                />
+                              </button>
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -444,6 +557,63 @@ defmodule VaultLiteWeb.SecretsLive.SecretDetailLive do
           </div>
         </main>
       </div>
+      
+    <!-- JavaScript for clipboard copying -->
+      <script>
+        window.copyToClipboard = function(text, button) {
+          // Use the modern Clipboard API if available
+          if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(function() {
+              showCopyFeedback(button, true);
+            }, function(err) {
+              console.error('Could not copy text: ', err);
+              showCopyFeedback(button, false);
+            });
+          } else {
+            // Fallback for older browsers
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            textArea.style.top = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+              const successful = document.execCommand('copy');
+              showCopyFeedback(button, successful);
+            } catch (err) {
+              console.error('Could not copy text: ', err);
+              showCopyFeedback(button, false);
+            }
+
+            document.body.removeChild(textArea);
+          }
+        };
+
+        function showCopyFeedback(button, success) {
+          const originalIcon = button.innerHTML;
+          const originalTip = button.getAttribute('data-tip');
+
+          if (success) {
+            button.innerHTML = '<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            button.setAttribute('data-tip', 'Copied!');
+            button.classList.add('btn-success');
+          } else {
+            button.innerHTML = '<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            button.setAttribute('data-tip', 'Copy failed');
+            button.classList.add('btn-error');
+          }
+
+          // Reset after 2 seconds
+          setTimeout(function() {
+            button.innerHTML = originalIcon;
+            button.setAttribute('data-tip', originalTip);
+            button.classList.remove('btn-success', 'btn-error');
+          }, 2000);
+        }
+      </script>
     </VaultLiteWeb.Layouts.app>
     """
   end

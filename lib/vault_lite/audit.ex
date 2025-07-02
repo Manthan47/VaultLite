@@ -55,6 +55,7 @@ defmodule VaultLite.Audit do
         result
 
       {:error, changeset} = error ->
+        dbg(changeset)
         Logger.error("Failed to create audit log: #{inspect(changeset.errors)}")
         error
     end
