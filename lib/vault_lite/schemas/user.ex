@@ -1,4 +1,4 @@
-defmodule VaultLite.User do
+defmodule VaultLite.Schema.User do
   @moduledoc """
   User schema and functions for managing user accounts.
   """
@@ -15,7 +15,7 @@ defmodule VaultLite.User do
     field :password, :string, virtual: true
     field :active, :boolean, default: true
 
-    has_many :roles, VaultLite.Role
+    has_many :roles, VaultLite.Schema.Role
 
     timestamps()
   end
@@ -68,7 +68,7 @@ defmodule VaultLite.User do
   @doc """
   Verify password against hash.
   """
-  def verify_password(%VaultLite.User{} = user, password) do
+  def verify_password(%VaultLite.Schema.User{} = user, password) do
     Bcrypt.verify_pass(password, user.password_hash)
   end
 

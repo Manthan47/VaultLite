@@ -6,8 +6,8 @@ defmodule VaultLiteWeb.BootstrapController do
 
   alias Ecto.Changeset
   alias VaultLite.Repo
-  alias VaultLite.Role
-  alias VaultLite.User
+  alias VaultLite.Schema.Role
+  alias VaultLite.Schema.User
 
   action_fallback VaultLiteWeb.FallbackController
 

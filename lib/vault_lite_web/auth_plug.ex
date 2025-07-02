@@ -9,7 +9,7 @@ defmodule VaultLiteWeb.AuthPlug do
   alias VaultLite.Auth
   alias VaultLite.Guardian
   alias VaultLite.Repo
-  alias VaultLite.User
+  alias VaultLite.Schema.User
 
   @doc """
   Fetches the current user from session or Guardian token and assigns to conn.

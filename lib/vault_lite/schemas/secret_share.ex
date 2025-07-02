@@ -1,4 +1,4 @@
-defmodule VaultLite.SecretShare do
+defmodule VaultLite.Schema.SecretShare do
   @moduledoc """
   Secret share schema and functions for managing secret sharing.
   """
@@ -16,8 +16,8 @@ defmodule VaultLite.SecretShare do
     field :expires_at, :utc_datetime
     field :active, :boolean, default: true
 
-    belongs_to :owner, VaultLite.User, foreign_key: :owner_id
-    belongs_to :shared_with, VaultLite.User, foreign_key: :shared_with_id
+    belongs_to :owner, VaultLite.Schema.User, foreign_key: :owner_id
+    belongs_to :shared_with, VaultLite.Schema.User, foreign_key: :shared_with_id
 
     timestamps()
   end

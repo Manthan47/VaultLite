@@ -10,7 +10,7 @@ defmodule VaultLiteWeb.SecretsLive.SecretFormLive do
 
   alias VaultLite.SecretGenerator
   alias VaultLite.Secrets
-  alias VaultLite.User
+  alias VaultLite.Schema.User
 
   @impl true
   def mount(params, session, socket) do

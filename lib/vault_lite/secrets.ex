@@ -15,9 +15,9 @@ defmodule VaultLite.Secrets do
   alias VaultLite.Auth
   alias VaultLite.Encryption
   alias VaultLite.Repo
-  alias VaultLite.Secret
   alias VaultLite.SecretSharing
-  alias VaultLite.User
+  alias VaultLite.Schema.Secret
+  alias VaultLite.Schema.User
 
   @doc """
   Creates a new encrypted secret with version 1.

@@ -15,7 +15,7 @@ defmodule VaultLite.Security.Monitor do
   import Ecto.Query
 
   alias VaultLite.Audit
-  alias VaultLite.AuditLog
+  alias VaultLite.Schema.AuditLog
   alias VaultLite.Repo
 
   @doc """

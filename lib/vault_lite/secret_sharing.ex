@@ -12,9 +12,9 @@ defmodule VaultLite.SecretSharing do
 
   alias VaultLite.Audit
   alias VaultLite.Repo
-  alias VaultLite.Secret
-  alias VaultLite.SecretShare
-  alias VaultLite.User
+  alias VaultLite.Schema.Secret
+  alias VaultLite.Schema.SecretShare
+  alias VaultLite.Schema.User
 
   @doc """
   Share a secret with another user.

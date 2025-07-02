@@ -1,4 +1,4 @@
-defmodule VaultLite.Secret do
+defmodule VaultLite.Schema.Secret do
   @moduledoc """
   Secret schema and functions for managing secrets.
   """
@@ -18,7 +18,7 @@ defmodule VaultLite.Secret do
     field :secret_type, :string, default: "role_based"
 
     # Owner for personal secrets
-    belongs_to :owner, VaultLite.User, foreign_key: :owner_id
+    belongs_to :owner, VaultLite.Schema.User, foreign_key: :owner_id
 
     timestamps()
   end

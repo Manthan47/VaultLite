@@ -11,8 +11,8 @@ defmodule VaultLiteWeb.AdminLive.UserManagementLive do
   use VaultLiteWeb, :live_view
 
   alias VaultLite.Auth
-  alias VaultLite.Role
-  alias VaultLite.User
+  alias VaultLite.Schema.Role
+  alias VaultLite.Schema.User
 
   @impl true
   def mount(_params, session, socket) do

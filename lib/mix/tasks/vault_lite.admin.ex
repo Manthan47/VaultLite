@@ -22,8 +22,12 @@ defmodule Mix.Tasks.VaultLite.Admin do
       mix vault_lite.admin demote <username>
   """
   use Mix.Task
-  alias VaultLite.{Repo, User, Role}
+
   import Ecto.Query
+
+  alias VaultLite.Repo
+  alias VaultLite.Schema.Role
+  alias VaultLite.Schema.User
 
   @impl Mix.Task
   def run(args) do

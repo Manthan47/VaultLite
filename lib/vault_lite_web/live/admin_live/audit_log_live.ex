@@ -8,7 +8,7 @@ defmodule VaultLiteWeb.AdminLive.AuditLogLive do
 
   alias VaultLite.Audit
   alias VaultLite.Auth
-  alias VaultLite.User
+  alias VaultLite.Schema.User
 
   @impl true
   def mount(_params, session, socket) do

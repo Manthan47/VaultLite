@@ -9,7 +9,7 @@ defmodule VaultLiteWeb.SecretsLive.SecretDetailLive do
   use VaultLiteWeb, :live_view
 
   alias VaultLite.Secrets
-  alias VaultLite.User
+  alias VaultLite.Schema.User
 
   @impl true
   def mount(%{"key" => key}, session, socket) do
