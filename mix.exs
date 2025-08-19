@@ -63,6 +63,8 @@ defmodule VaultLite.MixProject do
       {:guardian, "~> 2.3"},
       {:bcrypt_elixir, "~> 3.0"},
       {:plug_attack, "~> 0.4"},
+      # Dev dependencies
+      {:tidewave, "~> 0.2", only: :dev},
       # Testing dependencies
       {:mox, "~> 1.0", only: :test},
       {:stream_data, "~> 1.0", only: :test}
