@@ -64,44 +64,7 @@ module.exports = {
     })
   ],
   daisyui: {
-    themes: [
-      {
-        light: {
-          "primary": "#6366f1",        // indigo-500
-          "primary-focus": "#4f46e5",  // indigo-600
-          "primary-content": "#ffffff",
-          "secondary": "#f59e0b",      // amber-500
-          "accent": "#10b981",         // emerald-500
-          "neutral": "#374151",        // gray-700
-          "base-100": "#ffffff",       // white
-          "base-200": "#f9fafb",       // gray-50
-          "base-300": "#e5e7eb",       // gray-200
-          "base-content": "#1f2937",   // gray-800
-          "info": "#3b82f6",           // blue-500
-          "success": "#10b981",        // emerald-500
-          "warning": "#f59e0b",        // amber-500
-          "error": "#ef4444",          // red-500
-        },
-      },
-      {
-        dark: {
-          "primary": "#818cf8",        // indigo-400
-          "primary-focus": "#6366f1",  // indigo-500
-          "primary-content": "#1e1b4b", // indigo-900
-          "secondary": "#fbbf24",      // amber-400
-          "accent": "#34d399",         // emerald-400
-          "neutral": "#f3f4f6",        // gray-100
-          "base-100": "#1f2937",       // gray-800
-          "base-200": "#111827",       // gray-900
-          "base-300": "#374151",       // gray-700
-          "base-content": "#f9fafb",   // gray-50
-          "info": "#60a5fa",           // blue-400
-          "success": "#34d399",        // emerald-400
-          "warning": "#fbbf24",        // amber-400
-          "error": "#f87171",          // red-400
-        },
-      },
-    ],
+    themes: false,  // Themes are defined in app.css using @plugin directives
     darkTheme: "dark",
     base: true,
     styled: true,
