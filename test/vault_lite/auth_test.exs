@@ -3,8 +3,9 @@ defmodule VaultLite.AuthTest do
   import Mox
   import StreamData
 
-  alias VaultLite.{Auth, User, Role}
+  alias VaultLite.Auth
   alias VaultLite.Repo
+  alias VaultLite.Schema.User
 
   # Set up mocks
   setup :verify_on_exit!

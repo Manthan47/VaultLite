@@ -85,6 +85,50 @@ config :vault_lite, :audit_logs,
   # Run purge job daily at 2 AM
   purge_schedule: "0 2 * * *"
 
+# Enhanced rate limiting configuration
+config :vault_lite, :security,
+  rate_limiting: [
+    # User-based limits
+    # requests per minute for admins
+    admin_rate_limit: 300,
+    # burst allowance for admins
+    admin_burst_limit: 50,
+    # requests per minute for users
+    user_rate_limit: 100,
+    # burst allowance for users
+    user_burst_limit: 10,
+
+    # IP-based limits and thresholds
+    # failed requests before IP block
+    block_threshold: 10,
+    # failed requests before suspicious
+    suspicious_threshold: 5,
+    # reduced limit for suspicious IPs
+    suspicious_rate_limit: 10,
+    # reduced burst for suspicious IPs
+    suspicious_burst_limit: 2,
+
+    # Emergency limits
+    # emergency limit during attacks
+    emergency_rate_limit: 5,
+    # requests in 10 seconds considered rapid
+    rapid_request_threshold: 50,
+    # auth failures in 5 minutes
+    auth_failure_threshold: 5,
+
+    # Response settings
+    # retry-after header value
+    retry_after_seconds: 60,
+
+    # Endpoint-specific limits (optional)
+    endpoint_limits: %{
+      "POST:/api/auth/login" => %{requests_per_minute: 3},
+      "POST:/api/auth/register" => %{requests_per_minute: 5},
+      "POST:/api/secrets*" => %{requests_per_minute: 50},
+      "GET:/api/secrets*" => %{requests_per_minute: 200}
+    }
+  ]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

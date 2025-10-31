@@ -1,4 +1,4 @@
-defmodule VaultLiteWeb.Plugs.EnhancedRateLimiter do
+defmodule VaultLiteWeb.Plugs.RateLimiter do
   @moduledoc """
   Enhanced rate limiting with user-based and adaptive throttling capabilities.
 
@@ -439,9 +439,16 @@ defmodule VaultLiteWeb.Plugs.EnhancedRateLimiter do
       Jason.encode!(%{
         error: "rate_limit_exceeded",
         message: message,
-        retry_after: get_config(:retry_after_seconds, 60)
+        retry_after: resolve_retry_after()
       })
     )
+    |> halt()
+  end
+
+  defp resolve_retry_after() do
+    DateTime.utc_now()
+    |> DateTime.add(get_config(:retry_after_seconds, 60), :second)
+    |> DateTime.to_unix()
   end
 
   defp log_security_event(conn, event) do

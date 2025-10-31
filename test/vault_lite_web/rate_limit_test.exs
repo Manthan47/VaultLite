@@ -105,7 +105,7 @@ defmodule VaultLiteWeb.RateLimitTest do
     end
   end
 
-  describe "EnhancedRateLimiter" do
+  describe "RateLimiter" do
     test "applies different limits for admin vs regular users", %{user: user} do
       # Create admin user
       {:ok, admin} =
@@ -351,7 +351,7 @@ defmodule VaultLiteWeb.RateLimitTest do
     end
 
     test "includes retry-after information in rate limit responses" do
-      # This tests the EnhancedRateLimiter response format
+      # This tests the RateLimiter response format
       # We'll need to trigger it through the enhanced limiter specifically
 
       # Mock a blocked IP status

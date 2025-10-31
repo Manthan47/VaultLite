@@ -14,8 +14,6 @@ defmodule VaultLite.Application do
       {Phoenix.PubSub, name: VaultLite.PubSub},
       # Start the Finch HTTP client for sending emails
       {Finch, name: VaultLite.Finch},
-      # Start PlugAttack ETS storage for rate limiting
-      {PlugAttack.Storage.Ets, name: VaultLite.PlugAttackStorage, clean_period: 60_000},
       # Enhanced rate limiting cache
       %{
         id: :rate_limit_cache_supervisor,
@@ -42,7 +40,7 @@ defmodule VaultLite.Application do
     Supervisor.start_link(children, opts)
   end
 
-  # Tell Phoenix to update the endpoint configuration
+  # Tell Phoenix to update the endpoint configurationr
   # whenever the application is updated.
   @impl true
   def config_change(changed, _new, removed) do
