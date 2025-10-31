@@ -186,347 +186,265 @@ defmodule VaultLiteWeb.SecretsLive.SecretDetailLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="h-full bg-gray-50">
-      <!-- Navigation Header -->
-      <nav class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between h-16">
-            <div class="flex items-center">
-              <.icon name="hero-lock-closed" class="h-8 w-8 text-indigo-600" />
-              <span class="ml-2 text-xl font-bold text-gray-900">VaultLite</span>
-            </div>
-
-            <div class="flex items-center space-x-4">
-              <span class="text-sm text-gray-700">Welcome, {@current_user.username}!</span>
-
-              <.link
-                navigate="/dashboard"
-                class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Dashboard
-              </.link>
-
-              <.link
-                href="/logout"
-                method="delete"
-                class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Logout
-              </.link>
-            </div>
+    <VaultLiteWeb.Layouts.app flash={@flash} current_user={@current_user}>
+      <div class="min-h-screen">
+        <!-- Main Content -->
+        <main class="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <!-- Flash Messages -->
+          <div :if={Phoenix.Flash.get(@flash, :info)} class="alert alert-success mb-4">
+            <.icon name="hero-check-circle" class="h-5 w-5" />
+            <span>{Phoenix.Flash.get(@flash, :info)}</span>
           </div>
-        </div>
-      </nav>
-      
-    <!-- Main Content -->
-      <main class="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <!-- Flash Messages -->
-        <div :if={Phoenix.Flash.get(@flash, :info)} class="mb-4 rounded-md bg-green-50 p-4">
-          <div class="flex">
-            <div class="flex-shrink-0">
-              <.icon name="hero-check-circle" class="h-5 w-5 text-green-400" />
-            </div>
-            <div class="ml-3">
-              <p class="text-sm font-medium text-green-800">
-                {Phoenix.Flash.get(@flash, :info)}
-              </p>
-            </div>
-          </div>
-        </div>
 
-        <div :if={Phoenix.Flash.get(@flash, :error)} class="mb-4 rounded-md bg-red-50 p-4">
-          <div class="flex">
-            <div class="flex-shrink-0">
-              <.icon name="hero-x-circle" class="h-5 w-5 text-red-400" />
-            </div>
-            <div class="ml-3">
-              <p class="text-sm font-medium text-red-800">
-                {Phoenix.Flash.get(@flash, :error)}
-              </p>
-            </div>
+          <div :if={Phoenix.Flash.get(@flash, :error)} class="alert alert-error mb-4">
+            <.icon name="hero-x-circle" class="h-5 w-5" />
+            <span>{Phoenix.Flash.get(@flash, :error)}</span>
           </div>
-        </div>
-        
+          
     <!-- Loading State -->
-        <div :if={@loading} class="text-center py-12">
-          <div class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-gray-500 bg-white">
-            <svg
-              class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-              </circle>
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              >
-              </path>
-            </svg>
-            Loading...
+          <div :if={@loading} class="flex justify-center py-12">
+            <span class="loading loading-spinner loading-md"></span>
+            <span class="ml-2">Loading...</span>
           </div>
-        </div>
-        
+          
     <!-- Error State -->
-        <div :if={@error && !@loading} class="text-center py-12">
-          <.icon name="hero-exclamation-triangle" class="mx-auto h-12 w-12 text-red-400" />
-          <h3 class="mt-2 text-sm font-medium text-gray-900">Error</h3>
-          <p class="mt-1 text-sm text-gray-500">{@error}</p>
-          <div class="mt-6">
-            <.link
-              navigate="/dashboard"
-              class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
-            >
-              Back to Dashboard
-            </.link>
-          </div>
-        </div>
-        
-    <!-- Secret Detail View -->
-        <div :if={@live_action == :show && @secret && !@loading && !@error}>
-          <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
-              <div class="flex items-center justify-between">
-                <div>
-                  <div class="flex items-center space-x-3">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900">Secret Details</h3>
-                    <% {badge_text, badge_class} = secret_type_badge(@secret.secret_type) %>
-                    <span class={"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium #{badge_class}"}>
-                      {badge_text}
-                    </span>
-                    <%= if @secret.secret_type == "personal" do %>
-                      <.icon name="hero-user" class="h-5 w-5 text-blue-500" />
-                    <% else %>
-                      <.icon name="hero-key" class="h-5 w-5 text-green-500" />
-                    <% end %>
-                  </div>
-                  <p class="mt-1 max-w-2xl text-sm text-gray-500">
-                    Key: {@secret.key}
-                  </p>
-                </div>
-                <div class="flex space-x-3">
-                  <.link
-                    navigate={"/secrets/#{@secret.key}/edit"}
-                    class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                    title="Edit secret"
-                  >
-                    <.icon name="hero-pencil" class="h-4 w-4" />
-                  </.link>
-                  <.link
-                    navigate={"/secrets/#{@secret.key}/versions"}
-                    class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                    title="View versions"
-                  >
-                    <.icon name="hero-clock" class="h-4 w-4" />
-                  </.link>
-                </div>
-              </div>
-            </div>
-
-            <dl class="divide-y divide-gray-200">
-              <div class="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt class="text-sm font-medium text-gray-500">Type</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  <% {owner_text, owner_class} = get_owner_info(@secret, @current_user) %>
-                  <span class={"text-sm #{owner_class}"}>
-                    {owner_text}
-                  </span>
-                  <%= if @secret.secret_type == "personal" do %>
-                    <p class="text-xs text-gray-500 mt-1">
-                      This secret is private to you and not shared with other users
-                    </p>
-                  <% else %>
-                    <p class="text-xs text-gray-500 mt-1">
-                      This secret's access is controlled by role-based permissions
-                    </p>
-                  <% end %>
-                </dd>
-              </div>
-
-              <div class="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt class="text-sm font-medium text-gray-500">Version</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    v{@secret.version}
-                  </span>
-                </dd>
-              </div>
-
-              <div class="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt class="text-sm font-medium text-gray-500">Secret Value</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  <div class="flex items-center space-x-3">
-                    <div class="flex-1">
-                      <%= if @show_value do %>
-                        <div class="font-mono p-3 bg-gray-100 rounded border text-sm break-all">
-                          {@secret.value}
-                        </div>
-                      <% else %>
-                        <div class="font-mono p-3 bg-gray-100 rounded border text-sm">
-                          ••••••••••••••••••••
-                        </div>
-                      <% end %>
-                    </div>
-                    <button
-                      phx-click="toggle_value"
-                      class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      <.icon
-                        name={if(@show_value, do: "hero-eye-slash", else: "hero-eye")}
-                        class="h-4 w-4"
-                      />
-                    </button>
-                  </div>
-                </dd>
-              </div>
-
-              <div class="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt class="text-sm font-medium text-gray-500">Created</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {format_date(@secret.inserted_at)}
-                </dd>
-              </div>
-
-              <div class="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt class="text-sm font-medium text-gray-500">Last Updated</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  {format_date(@secret.updated_at)}
-                </dd>
-              </div>
-
-              <div
-                :if={@secret.metadata && map_size(@secret.metadata) > 0}
-                class="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6"
-              >
-                <dt class="text-sm font-medium text-gray-500">Metadata</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  <div class="space-y-2">
-                    <%= for {key, value} <- @secret.metadata do %>
-                      <div class="flex">
-                        <span class="font-medium text-gray-700 mr-2">{key}:</span>
-                        <span class="text-gray-900">{value}</span>
-                      </div>
-                    <% end %>
-                  </div>
-                </dd>
-              </div>
-            </dl>
-          </div>
-        </div>
-        
-    <!-- Versions View -->
-        <div :if={@live_action == :versions && !@loading && !@error}>
-          <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
-              <div class="flex items-center justify-between">
-                <div>
-                  <h3 class="text-lg leading-6 font-medium text-gray-900">Version History</h3>
-                  <p class="mt-1 max-w-2xl text-sm text-gray-500">
-                    Key: {@secret_key}
-                  </p>
-                </div>
-                <.link
-                  navigate={"/secrets/#{@secret_key}"}
-                  class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                  title="Back to details"
-                >
-                  <.icon name="hero-arrow-left" class="h-4 w-4" />
-                </.link>
-              </div>
-            </div>
-
-            <div class="divide-y divide-gray-200">
-              <%= for version <- @versions do %>
-                <div class="px-4 py-4">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        v{version.version}
-                      </span>
-                      <%= if version.secret_type do %>
-                        <% {badge_text, badge_class} = secret_type_badge(version.secret_type) %>
-                        <span class={"ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium #{badge_class}"}>
-                          {badge_text}
-                        </span>
-                      <% end %>
-                      <div class="ml-4">
-                        <p class="text-sm text-gray-500">
-                          Created: {format_date(version.created_at)}
-                        </p>
-                        <p class="text-sm text-gray-500">
-                          Updated: {format_date(version.updated_at)}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      phx-click="load_version"
-                      phx-value-version={version.version}
-                      class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                      title="View version {version.version}"
-                    >
-                      <.icon name="hero-eye" class="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div :if={version.metadata && map_size(version.metadata) > 0} class="mt-2">
-                    <p class="text-xs text-gray-500">
-                      Metadata: {Enum.map_join(version.metadata, ", ", fn {k, v} -> "#{k}: #{v}" end)}
-                    </p>
-                  </div>
-                </div>
-              <% end %>
+          <div :if={@error && !@loading} class="text-center py-12">
+            <.icon name="hero-exclamation-triangle" class="mx-auto h-12 w-12" />
+            <h3 class="mt-2 text-sm font-medium">Error</h3>
+            <p class="mt-1 text-sm opacity-70">{@error}</p>
+            <div class="mt-6">
+              <.link navigate="/dashboard" class="btn btn-primary">
+                Back to Dashboard
+              </.link>
             </div>
           </div>
           
-    <!-- Selected Version Display -->
-          <div :if={@secret} class="mt-6 bg-white shadow overflow-hidden sm:rounded-lg">
-            <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
-              <div class="flex items-center space-x-3">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">
-                  Version {[@secret.version]} Details
-                </h3>
-                <%= if @secret.secret_type do %>
-                  <% {badge_text, badge_class} = secret_type_badge(@secret.secret_type) %>
-                  <span class={"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium #{badge_class}"}>
-                    {badge_text}
-                  </span>
-                <% end %>
-              </div>
-            </div>
-            <dl class="divide-y divide-gray-200">
-              <div class="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt class="text-sm font-medium text-gray-500">Secret Value</dt>
-                <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  <div class="flex items-center space-x-3">
-                    <div class="flex-1">
-                      <%= if @show_value do %>
-                        <div class="font-mono p-3 bg-gray-100 rounded border text-sm break-all">
-                          {@secret.value}
-                        </div>
+    <!-- Secret Detail View -->
+          <div :if={@live_action == :show && @secret && !@loading && !@error}>
+            <div class="card bg-base-100">
+              <div class="card-body">
+                <div class="flex items-center justify-between mb-4">
+                  <div>
+                    <div class="flex items-center gap-3">
+                      <h2 class="card-title">Secret Details</h2>
+                      <% {badge_text, _badge_class} = secret_type_badge(@secret.secret_type) %>
+                      <div class="badge badge-outline">{badge_text}</div>
+                      <%= if @secret.secret_type == "personal" do %>
+                        <.icon name="hero-user" class="h-5 w-5" />
                       <% else %>
-                        <div class="font-mono p-3 bg-gray-100 rounded border text-sm">
-                          ••••••••••••••••••••
-                        </div>
+                        <.icon name="hero-key" class="h-5 w-5" />
                       <% end %>
                     </div>
-                    <button
-                      phx-click="toggle_value"
-                      class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      <.icon
-                        name={if(@show_value, do: "hero-eye-slash", else: "hero-eye")}
-                        class="h-4 w-4"
-                      />
-                    </button>
+                    <p class="opacity-70">Key: {@secret.key}</p>
                   </div>
-                </dd>
+                  <div class="flex gap-2">
+                    <.link
+                      navigate={"/secrets/#{@secret.key}/edit"}
+                      class="btn btn-ghost btn-sm"
+                      title="Edit secret"
+                    >
+                      <.icon name="hero-pencil" class="h-4 w-4" />
+                    </.link>
+                    <.link
+                      navigate={"/secrets/#{@secret.key}/versions"}
+                      class="btn btn-ghost btn-sm"
+                      title="View versions"
+                    >
+                      <.icon name="hero-clock" class="h-4 w-4" />
+                    </.link>
+                  </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                  <table class="table">
+                    <tbody>
+                      <tr>
+                        <td class="font-medium">Type</td>
+                        <td>
+                          <% {owner_text, _owner_class} = get_owner_info(@secret, @current_user) %>
+                          <span>{owner_text}</span>
+                          <%= if @secret.secret_type == "personal" do %>
+                            <p class="text-xs opacity-70 mt-1">
+                              This secret is private to you and not shared with other users
+                            </p>
+                          <% else %>
+                            <p class="text-xs opacity-70 mt-1">
+                              This secret's access is controlled by role-based permissions
+                            </p>
+                          <% end %>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td class="font-medium">Version</td>
+                        <td>
+                          <div class="badge badge-info">v{@secret.version}</div>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td class="font-medium">Secret Value</td>
+                        <td>
+                          <div class="flex items-center gap-3">
+                            <div class="flex-1">
+                              <%= if @show_value do %>
+                                <div class="mockup-code">
+                                  <pre><code>{@secret.value}</code></pre>
+                                </div>
+                              <% else %>
+                                <div class="mockup-code">
+                                  <pre><code>••••••••••••••••••••</code></pre>
+                                </div>
+                              <% end %>
+                            </div>
+                            <button phx-click="toggle_value" class="btn btn-ghost btn-sm">
+                              <.icon
+                                name={if(@show_value, do: "hero-eye-slash", else: "hero-eye")}
+                                class="h-4 w-4"
+                              />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td class="font-medium">Created</td>
+                        <td>{format_date(@secret.inserted_at)}</td>
+                      </tr>
+
+                      <tr>
+                        <td class="font-medium">Last Updated</td>
+                        <td>{format_date(@secret.updated_at)}</td>
+                      </tr>
+
+                      <tr :if={@secret.metadata && map_size(@secret.metadata) > 0}>
+                        <td class="font-medium">Metadata</td>
+                        <td>
+                          <div class="space-y-1">
+                            <%= for {key, value} <- @secret.metadata do %>
+                              <div class="flex gap-2">
+                                <span class="font-medium">{key}:</span>
+                                <span>{value}</span>
+                              </div>
+                            <% end %>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </dl>
+            </div>
           </div>
-        </div>
-      </main>
-    </div>
+          
+    <!-- Versions View -->
+          <div :if={@live_action == :versions && !@loading && !@error}>
+            <div class="card bg-base-100">
+              <div class="card-body">
+                <div class="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 class="card-title">Version History</h2>
+                    <p class="opacity-70">Key: {@secret_key}</p>
+                  </div>
+                  <.link
+                    navigate={"/secrets/#{@secret_key}"}
+                    class="btn btn-ghost btn-sm"
+                    title="Back to details"
+                  >
+                    <.icon name="hero-arrow-left" class="h-4 w-4" />
+                  </.link>
+                </div>
+
+                <div class="space-y-4">
+                  <%= for version <- @versions do %>
+                    <div class="card bg-base-200">
+                      <div class="card-body p-4">
+                        <div class="flex items-center justify-between">
+                          <div class="flex items-center gap-3">
+                            <div class="badge badge-info">v{version.version}</div>
+                            <%= if version.secret_type do %>
+                              <% {badge_text, _badge_class} = secret_type_badge(version.secret_type) %>
+                              <div class="badge badge-outline">{badge_text}</div>
+                            <% end %>
+                            <div>
+                              <p class="text-sm opacity-70">
+                                Created: {format_date(version.created_at)}
+                              </p>
+                              <p class="text-sm opacity-70">
+                                Updated: {format_date(version.updated_at)}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            phx-click="load_version"
+                            phx-value-version={version.version}
+                            class="btn btn-ghost btn-sm"
+                            title="View version {version.version}"
+                          >
+                            <.icon name="hero-eye" class="h-4 w-4" />
+                          </button>
+                        </div>
+                        <div :if={version.metadata && map_size(version.metadata) > 0} class="mt-2">
+                          <p class="text-xs opacity-70">
+                            Metadata: {Enum.map_join(version.metadata, ", ", fn {k, v} ->
+                              "#{k}: #{v}"
+                            end)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+            
+    <!-- Selected Version Display -->
+            <div :if={@secret} class="card bg-base-100 mt-6">
+              <div class="card-body">
+                <div class="flex items-center gap-3 mb-4">
+                  <h3 class="text-lg font-medium">Version {[@secret.version]} Details</h3>
+                  <%= if @secret.secret_type do %>
+                    <% {badge_text, _badge_class} = secret_type_badge(@secret.secret_type) %>
+                    <div class="badge badge-outline">{badge_text}</div>
+                  <% end %>
+                </div>
+
+                <div class="overflow-x-auto">
+                  <table class="table">
+                    <tbody>
+                      <tr>
+                        <td class="font-medium">Secret Value</td>
+                        <td>
+                          <div class="flex items-center gap-3">
+                            <div class="flex-1">
+                              <%= if @show_value do %>
+                                <div class="mockup-code">
+                                  <pre><code>{@secret.value}</code></pre>
+                                </div>
+                              <% else %>
+                                <div class="mockup-code">
+                                  <pre><code>••••••••••••••••••••</code></pre>
+                                </div>
+                              <% end %>
+                            </div>
+                            <button phx-click="toggle_value" class="btn btn-ghost btn-sm">
+                              <.icon
+                                name={if(@show_value, do: "hero-eye-slash", else: "hero-eye")}
+                                class="h-4 w-4"
+                              />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </VaultLiteWeb.Layouts.app>
     """
   end
 end

@@ -191,240 +191,166 @@ defmodule VaultLiteWeb.AuthLive.RegisterLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="h-full flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div class="max-w-md w-full space-y-8">
-        <!-- Header -->
-        <div>
-          <div class="mx-auto h-12 w-auto flex justify-center">
-            <.icon name="hero-user-plus" class="h-12 w-12 text-indigo-600" />
-          </div>
-          <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create your VaultLite account
-          </h2>
-          <p class="mt-2 text-center text-sm text-gray-600">
-            Join the secure secrets management platform
-          </p>
-        </div>
-        
+    <div class="hero min-h-screen">
+      <div class="hero-content flex-col lg:flex-row-reverse">
+        <div class="card flex-shrink-0 w-full max-w-sm">
+          <div class="card-body">
+            <!-- Header -->
+            <div class="text-center mb-6">
+              <div class="flex justify-center mb-4">
+                <.icon name="hero-user-plus" class="h-12 w-12" />
+              </div>
+              <h1 class="text-3xl font-bold">Create your VaultLite account</h1>
+              <p class="py-2">Join the secure secrets management platform</p>
+            </div>
+            
     <!-- Flash Messages -->
-        <div :if={Phoenix.Flash.get(@flash, :info)} class="rounded-md bg-green-50 p-4">
-          <div class="flex">
-            <div class="flex-shrink-0">
-              <.icon name="hero-check-circle" class="h-5 w-5 text-green-400" />
+            <div :if={Phoenix.Flash.get(@flash, :info)} class="alert alert-success">
+              <.icon name="hero-check-circle" class="h-5 w-5" />
+              <span>{Phoenix.Flash.get(@flash, :info)}</span>
+              <button type="button" phx-click="clear_error" class="btn btn-ghost btn-xs">
+                <.icon name="hero-x-mark" class="h-4 w-4" />
+              </button>
             </div>
-            <div class="ml-3">
-              <p class="text-sm font-medium text-green-800">
-                {Phoenix.Flash.get(@flash, :info)}
-              </p>
-            </div>
-            <div class="ml-auto pl-3">
-              <div class="-mx-1.5 -my-1.5">
-                <button
-                  type="button"
-                  phx-click="clear_error"
-                  class="inline-flex bg-green-50 rounded-md p-1.5 text-green-500 hover:bg-green-100"
-                >
-                  <.icon name="hero-x-mark" class="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <div :if={Phoenix.Flash.get(@flash, :error)} class="rounded-md bg-red-50 p-4">
-          <div class="flex">
-            <div class="flex-shrink-0">
-              <.icon name="hero-x-circle" class="h-5 w-5 text-red-400" />
+            <div :if={Phoenix.Flash.get(@flash, :error)} class="alert alert-error">
+              <.icon name="hero-x-circle" class="h-5 w-5" />
+              <span>{Phoenix.Flash.get(@flash, :error)}</span>
+              <button type="button" phx-click="clear_error" class="btn btn-ghost btn-xs">
+                <.icon name="hero-x-mark" class="h-4 w-4" />
+              </button>
             </div>
-            <div class="ml-3">
-              <p class="text-sm font-medium text-red-800">
-                {Phoenix.Flash.get(@flash, :error)}
-              </p>
-            </div>
-            <div class="ml-auto pl-3">
-              <div class="-mx-1.5 -my-1.5">
-                <button
-                  type="button"
-                  phx-click="clear_error"
-                  class="inline-flex bg-red-50 rounded-md p-1.5 text-red-500 hover:bg-red-100"
-                >
-                  <.icon name="hero-x-mark" class="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        
+            
     <!-- Registration Form -->
-        <.form for={@form} phx-submit="register" phx-change="validate" class="mt-8 space-y-6">
-          <div class="space-y-4">
-            <!-- Username Field -->
-            <div>
-              <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
-              <.input
-                field={@form[:username]}
-                type="text"
-                autocomplete="username"
-                placeholder="Enter your username"
-                class={[
-                  "mt-1 block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6",
-                  if(@errors[:username],
-                    do: "ring-red-300 focus:ring-red-600",
-                    else: "ring-gray-300 focus:ring-indigo-600"
-                  )
-                ]}
-                phx-debounce="300"
-              />
-              <p :if={@errors[:username]} class="mt-1 text-sm text-red-600">
-                {@errors[:username]}
-              </p>
-            </div>
-            
-    <!-- Email Field -->
-            <div>
-              <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-              <.input
-                field={@form[:email]}
-                type="email"
-                autocomplete="email"
-                placeholder="Enter your email"
-                class={[
-                  "mt-1 block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6",
-                  if(@errors[:email],
-                    do: "ring-red-300 focus:ring-red-600",
-                    else: "ring-gray-300 focus:ring-indigo-600"
-                  )
-                ]}
-                phx-debounce="300"
-              />
-              <p :if={@errors[:email]} class="mt-1 text-sm text-red-600">
-                {@errors[:email]}
-              </p>
-            </div>
-            
-    <!-- Password Field with Strength Indicator -->
-            <div>
-              <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-              <.input
-                field={@form[:password]}
-                type="password"
-                autocomplete="new-password"
-                placeholder="Create a strong password"
-                class={[
-                  "mt-1 block w-full rounded-md border-0 py-1.5 text-gray-900 ring-1 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-inset sm:text-sm sm:leading-6",
-                  if(@errors[:password],
-                    do: "ring-red-300 focus:ring-red-600",
-                    else: "ring-gray-300 focus:ring-indigo-600"
-                  )
-                ]}
-                phx-debounce="300"
-              />
+            <.form for={@form} phx-submit="register" phx-change="validate" class="space-y-4">
+              <!-- Username Field -->
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">Username</span>
+                </label>
+                <.input
+                  field={@form[:username]}
+                  type="text"
+                  autocomplete="username"
+                  placeholder="Enter your username"
+                  class={[
+                    "input input-bordered",
+                    if(@errors[:username], do: "input-error", else: "")
+                  ]}
+                  phx-debounce="300"
+                />
+                <label :if={@errors[:username]} class="label">
+                  <span class="label-text-alt text-error">{@errors[:username]}</span>
+                </label>
+              </div>
               
+    <!-- Email Field -->
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">Email</span>
+                </label>
+                <.input
+                  field={@form[:email]}
+                  type="email"
+                  autocomplete="email"
+                  placeholder="Enter your email"
+                  class={[
+                    "input input-bordered",
+                    if(@errors[:email], do: "input-error", else: "")
+                  ]}
+                  phx-debounce="300"
+                />
+                <label :if={@errors[:email]} class="label">
+                  <span class="label-text-alt text-error">{@errors[:email]}</span>
+                </label>
+              </div>
+              
+    <!-- Password Field with Strength Indicator -->
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">Password</span>
+                </label>
+                <.input
+                  field={@form[:password]}
+                  type="password"
+                  autocomplete="new-password"
+                  placeholder="Create a strong password"
+                  class={[
+                    "input input-bordered",
+                    if(@errors[:password], do: "input-error", else: "")
+                  ]}
+                  phx-debounce="300"
+                />
+                
     <!-- Password Strength Indicator -->
-              <div :if={@password_strength.score > 0} class="mt-2">
-                <div class="flex items-center space-x-2">
-                  <div class="flex-1">
-                    <div class="bg-gray-200 rounded-full h-2">
-                      <div class={[
-                        "h-2 rounded-full transition-all duration-300",
+                <div :if={@password_strength.score > 0} class="mt-2">
+                  <div class="flex items-center gap-2">
+                    <progress
+                      class={[
+                        "progress w-full",
                         case @password_strength.color do
-                          "red" -> "bg-red-500 w-1/4"
-                          "yellow" -> "bg-yellow-500 w-2/4"
-                          "blue" -> "bg-blue-500 w-3/4"
-                          "green" -> "bg-green-500 w-full"
-                          _ -> "bg-gray-300 w-0"
+                          "red" -> "progress-error"
+                          "yellow" -> "progress-warning"
+                          "blue" -> "progress-info"
+                          "green" -> "progress-success"
+                          _ -> "progress-neutral"
                         end
-                      ]}>
-                      </div>
-                    </div>
+                      ]}
+                      value={@password_strength.score * 25}
+                      max="100"
+                    >
+                    </progress>
+                    <span class="text-xs font-medium">
+                      {case @password_strength.score do
+                        1 -> "Weak"
+                        2 -> "Fair"
+                        3 -> "Good"
+                        4 -> "Strong"
+                        _ -> ""
+                      end}
+                    </span>
                   </div>
-                  <span class={[
-                    "text-xs font-medium",
-                    case @password_strength.color do
-                      "red" -> "text-red-600"
-                      "yellow" -> "text-yellow-600"
-                      "blue" -> "text-blue-600"
-                      "green" -> "text-green-600"
-                      _ -> "text-gray-600"
-                    end
-                  ]}>
-                    {case @password_strength.score do
-                      1 -> "Weak"
-                      2 -> "Fair"
-                      3 -> "Good"
-                      4 -> "Strong"
-                      _ -> ""
-                    end}
-                  </span>
+                  <div :if={length(@password_strength.feedback) > 0} class="mt-1">
+                    <p :for={feedback <- @password_strength.feedback} class="text-xs opacity-70">
+                      {feedback}
+                    </p>
+                  </div>
                 </div>
-                <div :if={length(@password_strength.feedback) > 0} class="mt-1">
-                  <p :for={feedback <- @password_strength.feedback} class="text-xs text-gray-600">
-                    {feedback}
-                  </p>
-                </div>
+
+                <label :if={@errors[:password]} class="label">
+                  <span class="label-text-alt text-error">{@errors[:password]}</span>
+                </label>
               </div>
 
-              <p :if={@errors[:password]} class="mt-1 text-sm text-red-600">
-                {@errors[:password]}
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <.button
-              type="submit"
-              disabled={not form_valid?(@errors) or @loading or @password_strength.score < 2}
-              class={
-                "group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 " <>
-                  if(form_valid?(@errors) and not @loading and @password_strength.score >= 2,
-                    do: "bg-indigo-600 hover:bg-indigo-700",
-                    else: "bg-gray-400 cursor-not-allowed"
-                  )
-              }
-            >
-              <span :if={@loading} class="absolute left-0 inset-y-0 flex items-center pl-3">
-                <svg
-                  class="animate-spin h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
+              <div class="form-control mt-6">
+                <.button
+                  type="submit"
+                  disabled={not form_valid?(@errors) or @loading or @password_strength.score < 2}
+                  class={[
+                    "btn w-full",
+                    if(form_valid?(@errors) and not @loading and @password_strength.score >= 2,
+                      do: "btn-primary",
+                      else: "btn-disabled"
+                    )
+                  ]}
                 >
-                  <circle
-                    class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"
-                  >
-                  </circle>
-                  <path
-                    class="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  >
-                  </path>
-                </svg>
-              </span>
-              <span :if={not @loading} class="absolute left-0 inset-y-0 flex items-center pl-3">
-                <.icon
-                  name="hero-user-plus"
-                  class="h-5 w-5 text-indigo-500 group-hover:text-indigo-400"
-                />
-              </span>
-              {if @loading, do: "Creating account...", else: "Create account"}
-            </.button>
-          </div>
+                  <span :if={@loading} class="loading loading-spinner loading-sm mr-2"></span>
+                  <.icon :if={not @loading} name="hero-user-plus" class="h-5 w-5 mr-2" />
+                  {if @loading, do: "Creating account...", else: "Create account"}
+                </.button>
+              </div>
 
-          <div class="text-center">
-            <p class="text-sm text-gray-600">
-              Already have an account?
-              <.link navigate="/login" class="font-medium text-indigo-600 hover:text-indigo-500">
-                Sign in
-              </.link>
-            </p>
+              <div class="text-center">
+                <p>
+                  Already have an account?
+                  <.link navigate="/login" class="link link-primary">
+                    Sign in
+                  </.link>
+                </p>
+              </div>
+            </.form>
           </div>
-        </.form>
+        </div>
       </div>
     </div>
     """

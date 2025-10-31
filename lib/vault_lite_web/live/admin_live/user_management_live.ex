@@ -223,287 +223,279 @@ defmodule VaultLiteWeb.AdminLive.UserManagementLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="h-full bg-gray-50">
-      <!-- Navigation Header -->
-      <nav class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between h-16">
-            <div class="flex items-center">
-              <.icon name="hero-lock-closed" class="h-8 w-8 text-indigo-600" />
-              <span class="ml-2 text-xl font-bold text-gray-900">VaultLite</span>
-            </div>
-
-            <div class="flex items-center space-x-4">
-              <span class="text-sm text-gray-700">Welcome, {@current_user.username}!</span>
-
-              <.link
-                navigate="/dashboard"
-                class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Dashboard
-              </.link>
-
-              <.link
-                navigate="/admin/roles"
-                class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Role Management
-              </.link>
-
-              <.link
-                navigate="/admin/audit"
-                class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Audit Logs
-              </.link>
-
-              <.link
-                href="/logout"
-                method="delete"
-                class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Logout
-              </.link>
-            </div>
+    <VaultLiteWeb.Layouts.app flash={@flash} current_user={@current_user}>
+      <div class="min-h-screen">
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <div class="mb-6">
+            <h1 class="text-2xl font-bold">User Management</h1>
+            <p class="mt-1 text-sm opacity-70">
+              Manage user accounts, roles, and permissions
+            </p>
           </div>
-        </div>
-      </nav>
-      
-    <!-- Main Content -->
-      <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div class="mb-6">
-          <h1 class="text-2xl font-bold text-gray-900">User Management</h1>
-          <p class="mt-1 text-sm text-gray-600">
-            Manage user accounts, roles, and permissions
-          </p>
-        </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- User List Panel -->
-          <div class="lg:col-span-2">
-            <div class="bg-white shadow rounded-lg">
-              <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-lg font-medium text-gray-900">Users</h2>
-                <!-- Search -->
-                <div class="mt-4">
-                  <form phx-submit="search" phx-change="search">
-                    <input
-                      type="text"
-                      name="query"
-                      value={@search_query}
-                      placeholder="Search users by username or email..."
-                      class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    />
-                  </form>
-                </div>
-              </div>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- User List Panel -->
+            <div class="lg:col-span-2">
+              <div class="card bg-base-100 shadow">
+                <div class="card-body">
+                  <h2 class="card-title">Users</h2>
+                  <!-- Search -->
+                  <div class="form-control">
+                    <form phx-submit="search" phx-change="search">
+                      <input
+                        type="text"
+                        name="query"
+                        value={@search_query}
+                        placeholder="Search users by username or email..."
+                        class="input input-bordered w-full"
+                      />
+                    </form>
+                  </div>
 
-              <div class="overflow-hidden">
-                <ul role="list" class="divide-y divide-gray-200">
-                  <%= for user <- @users do %>
-                    <li
-                      class={"px-6 py-4 hover:bg-gray-50 cursor-pointer #{if @selected_user && @selected_user.id == user.id, do: "bg-indigo-50 border-r-4 border-indigo-500"}"}
-                      phx-click="select_user"
-                      phx-value-id={user.id}
-                    >
-                      <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                          <div class="flex-shrink-0">
-                            <div class={"h-10 w-10 rounded-full flex items-center justify-center text-white font-medium #{if user.active, do: "bg-green-500", else: "bg-gray-400"}"}>
-                              {String.first(user.username) |> String.upcase()}
+                  <div class="space-y-2">
+                    <%= for user <- @users do %>
+                      <div
+                        class={[
+                          "card bg-base-200 cursor-pointer hover:bg-base-300",
+                          if(@selected_user && @selected_user.id == user.id,
+                            do: "ring-2 ring-primary",
+                            else: ""
+                          )
+                        ]}
+                        phx-click="select_user"
+                        phx-value-id={user.id}
+                      >
+                        <div class="card-body p-4">
+                          <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                              <div class="relative">
+                                <div class="avatar placeholder">
+                                  <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center">
+                                    <.icon name="hero-user" class="h-6 w-6" />
+                                  </div>
+                                </div>
+                                <!-- Status indicator dot -->
+                                <span class={[
+                                  "absolute bottom-0 right-0 block h-3 w-3 rounded-full ring-2 ring-base-100",
+                                  if(user.active,
+                                    do: "bg-success",
+                                    else: "bg-base-content opacity-20"
+                                  )
+                                ]} />
+                              </div>
+                              <div class="ml-4">
+                                <p class="text-sm font-medium">{user.username}</p>
+                                <p class="text-sm opacity-70">{user.email}</p>
+                                <div class="flex items-center mt-1 gap-2">
+                                  <div class={[
+                                    "badge",
+                                    if(user.active, do: "badge-success", else: "badge-ghost")
+                                  ]}>
+                                    {if user.active, do: "Active", else: "Inactive"}
+                                  </div>
+                                  <span class="text-xs opacity-70">
+                                    {length(user.roles)} role(s)
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                              <button
+                                type="button"
+                                class={[
+                                  "btn btn-sm",
+                                  if(user.active, do: "btn-error", else: "btn-success")
+                                ]}
+                                phx-click="toggle_user_status"
+                                phx-value-id={user.id}
+                              >
+                                {if user.active, do: "Deactivate", else: "Activate"}
+                              </button>
                             </div>
                           </div>
-                          <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-900">{user.username}</p>
-                            <p class="text-sm text-gray-500">{user.email}</p>
-                            <div class="flex items-center mt-1">
-                              <span class={"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium #{if user.active, do: "bg-green-100 text-green-800", else: "bg-gray-100 text-gray-800"}"}>
-                                {if user.active, do: "Active", else: "Inactive"}
-                              </span>
-                              <span class="ml-2 text-xs text-gray-500">
-                                {length(user.roles)} role(s)
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                          <button
-                            type="button"
-                            class={"inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-white #{if user.active, do: "bg-red-600 hover:bg-red-700", else: "bg-green-600 hover:bg-green-700"}"}
-                            phx-click="toggle_user_status"
-                            phx-value-id={user.id}
-                          >
-                            {if user.active, do: "Deactivate", else: "Activate"}
-                          </button>
                         </div>
                       </div>
-                    </li>
-                  <% end %>
-                </ul>
+                    <% end %>
 
-                <%= if @users == [] do %>
-                  <div class="text-center py-12">
-                    <.icon name="hero-users" class="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 class="mt-2 text-sm font-medium text-gray-900">No users found</h3>
-                    <p class="mt-1 text-sm text-gray-500">
-                      {if @search_query != "",
-                        do: "Try adjusting your search query.",
-                        else: "No users in the system yet."}
-                    </p>
+                    <%= if @users == [] do %>
+                      <div class="text-center py-12">
+                        <.icon name="hero-users" class="mx-auto h-12 w-12" />
+                        <h3 class="mt-2 text-sm font-medium">No users found</h3>
+                        <p class="mt-1 text-sm opacity-70">
+                          {if @search_query != "",
+                            do: "Try adjusting your search query.",
+                            else: "No users in the system yet."}
+                        </p>
+                      </div>
+                    <% end %>
                   </div>
-                <% end %>
+                </div>
               </div>
             </div>
-          </div>
-          
+            
     <!-- User Details Panel -->
-          <div class="lg:col-span-1">
-            <%= if @selected_user do %>
-              <div class="bg-white shadow rounded-lg">
-                <div class="px-6 py-4 border-b border-gray-200">
-                  <h3 class="text-lg font-medium text-gray-900">User Details</h3>
-                </div>
-                <div class="px-6 py-4">
-                  <div class="space-y-4">
-                    <div>
-                      <dt class="text-sm font-medium text-gray-500">Username</dt>
-                      <dd class="mt-1 text-sm text-gray-900">{@selected_user.username}</dd>
-                    </div>
-                    <div>
-                      <dt class="text-sm font-medium text-gray-500">Email</dt>
-                      <dd class="mt-1 text-sm text-gray-900">{@selected_user.email}</dd>
-                    </div>
-                    <div>
-                      <dt class="text-sm font-medium text-gray-500">Status</dt>
-                      <dd class="mt-1">
-                        <span class={"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium #{if @selected_user.active, do: "bg-green-100 text-green-800", else: "bg-gray-100 text-gray-800"}"}>
+            <div class="lg:col-span-1">
+              <%= if @selected_user do %>
+                <div class="card bg-base-100 shadow">
+                  <div class="card-body">
+                    <h3 class="card-title">User Details</h3>
+
+                    <div class="space-y-4">
+                      <div>
+                        <label class="label">
+                          <span class="label-text font-medium">Username</span>
+                        </label>
+                        <div class="text-sm">{@selected_user.username}</div>
+                      </div>
+                      <div>
+                        <label class="label">
+                          <span class="label-text font-medium">Email</span>
+                        </label>
+                        <div class="text-sm">{@selected_user.email}</div>
+                      </div>
+                      <div>
+                        <label class="label">
+                          <span class="label-text font-medium">Status</span>
+                        </label>
+                        <div class={[
+                          "badge",
+                          if(@selected_user.active, do: "badge-success", else: "badge-ghost")
+                        ]}>
                           {if @selected_user.active, do: "Active", else: "Inactive"}
-                        </span>
-                      </dd>
+                        </div>
+                      </div>
+                      <div>
+                        <label class="label">
+                          <span class="label-text font-medium">Created</span>
+                        </label>
+                        <div class="text-sm">
+                          {@selected_user.inserted_at |> Calendar.strftime("%B %d, %Y at %I:%M %p")}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <dt class="text-sm font-medium text-gray-500">Created</dt>
-                      <dd class="mt-1 text-sm text-gray-900">
-                        {@selected_user.inserted_at |> Calendar.strftime("%B %d, %Y at %I:%M %p")}
-                      </dd>
-                    </div>
-                  </div>
-                </div>
-                
+                    
     <!-- Roles Section -->
-                <div class="border-t border-gray-200">
-                  <div class="px-6 py-4">
-                    <div class="flex items-center justify-between">
-                      <h4 class="text-sm font-medium text-gray-900">Roles</h4>
-                      <button
-                        type="button"
-                        class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200"
-                        phx-click="show_role_form"
-                      >
-                        <.icon name="hero-plus" class="h-3 w-3 mr-1" /> Add Role
-                      </button>
-                    </div>
+                    <div class="divider"></div>
+                    <div>
+                      <div class="flex items-center justify-between">
+                        <h4 class="font-medium">Roles</h4>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-primary"
+                          phx-click="show_role_form"
+                        >
+                          <.icon name="hero-plus" class="h-3 w-3 mr-1" /> Add Role
+                        </button>
+                      </div>
 
-                    <div class="mt-4 space-y-2">
-                      <%= for role <- @selected_user.roles do %>
-                        <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                          <div>
-                            <span class="text-sm font-medium text-gray-900">{role.name}</span>
-                            <div class="text-xs text-gray-500">
-                              {Enum.join(role.permissions, ", ")}
+                      <div class="space-y-2 mt-4">
+                        <%= for role <- @selected_user.roles do %>
+                          <div class="card bg-base-200">
+                            <div class="card-body p-3">
+                              <div class="flex items-center justify-between">
+                                <div>
+                                  <span class="text-sm font-medium">{role.name}</span>
+                                  <div class="text-xs opacity-70">
+                                    {Enum.join(role.permissions, ", ")}
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  class="btn btn-ghost btn-xs"
+                                  phx-click="remove_role"
+                                  phx-value-role_name={role.name}
+                                >
+                                  <.icon name="hero-trash" class="h-4 w-4" />
+                                </button>
+                              </div>
                             </div>
                           </div>
-                          <button
-                            type="button"
-                            class="text-red-600 hover:text-red-800"
-                            phx-click="remove_role"
-                            phx-value-role_name={role.name}
-                          >
-                            <.icon name="hero-trash" class="h-4 w-4" />
-                          </button>
-                        </div>
-                      <% end %>
+                        <% end %>
 
-                      <%= if @selected_user.roles == [] do %>
-                        <p class="text-sm text-gray-500 italic">No roles assigned</p>
-                      <% end %>
+                        <%= if @selected_user.roles == [] do %>
+                          <p class="text-sm opacity-70 italic">No roles assigned</p>
+                        <% end %>
+                      </div>
                     </div>
-                  </div>
-                </div>
-                
+                    
     <!-- Role Assignment Form -->
-                <%= if @show_role_form do %>
-                  <div class="border-t border-gray-200 bg-gray-50">
-                    <div class="px-6 py-4">
-                      <h5 class="text-sm font-medium text-gray-900 mb-3">Assign New Role</h5>
-                      <form phx-submit="assign_role" phx-change="update_role_form">
-                        <div class="space-y-3">
-                          <div>
-                            <label class="block text-xs font-medium text-gray-700">Role Name</label>
-                            <input
-                              type="text"
-                              name="role[name]"
-                              value={@role_form["name"]}
-                              placeholder="Enter role name"
-                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label class="block text-xs font-medium text-gray-700">Permissions</label>
-                            <div class="mt-1 space-y-1">
-                              <%= for permission <- @available_permissions do %>
-                                <label class="flex items-center">
-                                  <input
-                                    type="checkbox"
-                                    name="role[permissions][]"
-                                    value={permission}
-                                    checked={permission in Map.get(@role_form, "permissions", [])}
-                                    class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                  />
-                                  <span class="ml-2 text-xs text-gray-700 capitalize">
-                                    {permission}
-                                  </span>
-                                </label>
-                              <% end %>
+                    <%= if @show_role_form do %>
+                      <div class="divider"></div>
+                      <div>
+                        <h5 class="font-medium mb-3">Assign New Role</h5>
+                        <form phx-submit="assign_role" phx-change="update_role_form">
+                          <div class="space-y-3">
+                            <div class="form-control">
+                              <label class="label">
+                                <span class="label-text">Role Name</span>
+                              </label>
+                              <input
+                                type="text"
+                                name="role[name]"
+                                value={@role_form["name"]}
+                                placeholder="Enter role name"
+                                class="input input-bordered"
+                                required
+                              />
+                            </div>
+                            <div class="form-control">
+                              <label class="label">
+                                <span class="label-text">Permissions</span>
+                              </label>
+                              <div class="space-y-1">
+                                <%= for permission <- @available_permissions do %>
+                                  <label class="label cursor-pointer justify-start gap-2">
+                                    <input
+                                      type="checkbox"
+                                      name="role[permissions][]"
+                                      value={permission}
+                                      checked={permission in Map.get(@role_form, "permissions", [])}
+                                      class="checkbox checkbox-primary"
+                                    />
+                                    <span class="label-text capitalize">
+                                      {permission}
+                                    </span>
+                                  </label>
+                                <% end %>
+                              </div>
+                            </div>
+                            <div class="flex gap-2">
+                              <button type="submit" class="btn btn-primary flex-1">
+                                Assign Role
+                              </button>
+                              <button
+                                type="button"
+                                class="btn btn-outline flex-1"
+                                phx-click="hide_role_form"
+                              >
+                                Cancel
+                              </button>
                             </div>
                           </div>
-                          <div class="flex space-x-2">
-                            <button
-                              type="submit"
-                              class="flex-1 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
-                            >
-                              Assign Role
-                            </button>
-                            <button
-                              type="button"
-                              class="flex-1 inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                              phx-click="hide_role_form"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      </form>
+                        </form>
+                      </div>
+                    <% end %>
+                  </div>
+                </div>
+              <% else %>
+                <div class="card bg-base-100 shadow">
+                  <div class="card-body">
+                    <div class="text-center py-12">
+                      <.icon name="hero-user-circle" class="mx-auto h-12 w-12" />
+                      <h3 class="mt-2 text-sm font-medium">No User Selected</h3>
+                      <p class="mt-1 text-sm opacity-70">
+                        Select a user from the list to view details and manage roles.
+                      </p>
                     </div>
                   </div>
-                <% end %>
-              </div>
-            <% else %>
-              <div class="bg-white shadow rounded-lg">
-                <div class="text-center py-12">
-                  <.icon name="hero-user-circle" class="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 class="mt-2 text-sm font-medium text-gray-900">No User Selected</h3>
-                  <p class="mt-1 text-sm text-gray-500">
-                    Select a user from the list to view details and manage roles.
-                  </p>
                 </div>
-              </div>
-            <% end %>
+              <% end %>
+            </div>
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </VaultLiteWeb.Layouts.app>
     """
   end
 end

@@ -326,303 +326,240 @@ defmodule VaultLiteWeb.SecretsLive.SecretFormLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="h-full bg-gray-50">
-      <!-- Navigation Header -->
-      <nav class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between h-16">
-            <div class="flex items-center">
-              <.link navigate="/dashboard" class="flex items-center">
-                <.icon name="hero-lock-closed" class="h-8 w-8 text-indigo-600" />
-                <span class="ml-2 text-xl font-bold text-gray-900">VaultLite</span>
-              </.link>
-            </div>
-
-            <div class="flex items-center space-x-4">
-              <span class="text-sm text-gray-700">Welcome, {@current_user.username}!</span>
-
-              <.link
-                navigate="/dashboard"
-                class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Back to Dashboard
-              </.link>
-
-              <.link
-                href="/logout"
-                method="delete"
-                class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Logout
-              </.link>
-            </div>
+    <VaultLiteWeb.Layouts.app flash={@flash} current_user={@current_user}>
+      <div class="min-h-screen">
+        <!-- Main Content -->
+        <main class="max-w-2xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <!-- Flash Messages -->
+          <div :if={Phoenix.Flash.get(@flash, :info)} class="alert alert-success mb-4">
+            <.icon name="hero-check-circle" class="h-5 w-5" />
+            <span>{Phoenix.Flash.get(@flash, :info)}</span>
           </div>
-        </div>
-      </nav>
-      
-    <!-- Main Content -->
-      <main class="max-w-2xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <!-- Flash Messages -->
-        <div :if={Phoenix.Flash.get(@flash, :info)} class="mb-4 rounded-md bg-green-50 p-4">
-          <div class="flex">
-            <div class="flex-shrink-0">
-              <.icon name="hero-check-circle" class="h-5 w-5 text-green-400" />
-            </div>
-            <div class="ml-3">
-              <p class="text-sm font-medium text-green-800">
-                {Phoenix.Flash.get(@flash, :info)}
-              </p>
-            </div>
-          </div>
-        </div>
 
-        <div :if={Phoenix.Flash.get(@flash, :error)} class="mb-4 rounded-md bg-red-50 p-4">
-          <div class="flex">
-            <div class="flex-shrink-0">
-              <.icon name="hero-x-circle" class="h-5 w-5 text-red-400" />
-            </div>
-            <div class="ml-3">
-              <p class="text-sm font-medium text-red-800">
-                {Phoenix.Flash.get(@flash, :error)}
-              </p>
-            </div>
+          <div :if={Phoenix.Flash.get(@flash, :error)} class="alert alert-error mb-4">
+            <.icon name="hero-x-circle" class="h-5 w-5" />
+            <span>{Phoenix.Flash.get(@flash, :error)}</span>
           </div>
-        </div>
-        
+          
     <!-- Form -->
-        <div class="bg-white shadow rounded-lg">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <h1 class="text-lg font-medium text-gray-900">{@page_title}</h1>
-          </div>
+          <div class="card bg-base-100">
+            <div class="card-body">
+              <h1 class="card-title">{@page_title}</h1>
 
-          <.form for={@form} phx-submit="submit" phx-change="validate" class="px-6 py-4 space-y-6">
-            <!-- Secret Type Toggle (only for new secrets) -->
-            <%= if @action == :new do %>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-3">Secret Type</label>
-                <div class="flex items-center space-x-6">
-                  <label class="flex items-center">
-                    <input
-                      type="radio"
-                      name="secret[secret_type]"
-                      value="role_based"
-                      checked={@selected_secret_type == "role_based"}
-                      phx-click="toggle_secret_type"
-                      phx-value-secret_type="role_based"
-                      class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
-                    />
-                    <span class="ml-2 text-sm text-gray-900">Role-based Secret</span>
-                  </label>
-                  <label class="flex items-center">
-                    <input
-                      type="radio"
-                      name="secret[secret_type]"
-                      value="personal"
-                      checked={@selected_secret_type == "personal"}
-                      phx-click="toggle_secret_type"
-                      phx-value-secret_type="personal"
-                      class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
-                    />
-                    <span class="ml-2 text-sm text-gray-900">Personal Secret</span>
-                  </label>
-                </div>
-                <p class="mt-2 text-sm text-gray-500">
-                  <%= if @selected_secret_type == "personal" do %>
-                    Personal secrets are only accessible by you and won't be shared based on roles.
-                  <% else %>
-                    Role-based secrets are accessible based on your assigned roles and permissions.
-                  <% end %>
-                </p>
-              </div>
-            <% else %>
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Secret Type</label>
-                <div class="mt-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-md sm:text-sm text-gray-900 flex items-center">
-                  <span class="capitalize">{String.replace(@secret.secret_type, "_", " ")}</span>
-                  <%= if @secret.secret_type == "personal" do %>
-                    <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      Personal
-                    </span>
-                  <% else %>
-                    <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Role-based
-                    </span>
-                  <% end %>
-                </div>
-                <p class="mt-1 text-sm text-gray-500">
-                  Secret type cannot be changed when editing
-                </p>
-              </div>
-            <% end %>
-            
-    <!-- Secret Key (only for new secrets) -->
-            <%= if @action == :new do %>
-              <div>
-                <label for="key" class="block text-sm font-medium text-gray-700">Secret Key</label>
-                <.input
-                  field={@form[:key]}
-                  type="text"
-                  placeholder="e.g., api/database/password or prod/jwt-secret"
-                  class={[
-                    "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm",
-                    if(@errors[:key], do: "border-red-300 focus:border-red-500 focus:ring-red-500")
-                  ]}
-                  phx-debounce="300"
-                />
-                <p :if={@errors[:key]} class="mt-1 text-sm text-red-600">
-                  {@errors[:key]}
-                </p>
-                <p class="mt-1 text-sm text-gray-500">
-                  <%= if @selected_secret_type == "personal" do %>
-                    Choose a descriptive name for your personal secret (e.g., my-password, personal-api-key)
-                  <% else %>
-                    Use forward slashes to organize secrets hierarchically (e.g., app/env/key)
-                  <% end %>
-                </p>
-              </div>
-            <% else %>
-              <div>
-                <label class="block text-sm font-medium text-gray-700">Secret Key</label>
-                <div class="mt-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-md sm:text-sm text-gray-900">
-                  {@secret.key}
-                </div>
-                <p class="mt-1 text-sm text-gray-500">
-                  Secret key cannot be changed when editing
-                </p>
-              </div>
-            <% end %>
-            
-    <!-- Secret Value -->
-            <div>
-              <label for="value" class="block text-sm font-medium text-gray-700">Secret Value</label>
-              <.input
-                field={@form[:value]}
-                type="textarea"
-                rows="4"
-                placeholder="Enter the secret value..."
-                class={[
-                  "mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm",
-                  if(@errors[:value], do: "border-red-300 focus:border-red-500 focus:ring-red-500")
-                ]}
-                phx-debounce="300"
-              />
-              <p :if={@errors[:value]} class="mt-1 text-sm text-red-600">
-                {@errors[:value]}
-              </p>
-              <p class="mt-1 text-sm text-gray-500">
-                The secret value will be encrypted before storage
-              </p>
-            </div>
-            
-    <!-- Metadata -->
-            <div>
-              <div class="flex items-center justify-between">
-                <label class="block text-sm font-medium text-gray-700">Metadata (Optional)</label>
-                <button
-                  type="button"
-                  phx-click="add_metadata_pair"
-                  class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200"
-                >
-                  <.icon name="hero-plus" class="h-4 w-4 mr-1" /> Add Field
-                </button>
-              </div>
-
-              <div class="mt-2 space-y-2">
-                <%= for {pair, index} <- Enum.with_index(@metadata_pairs) do %>
-                  <div class="flex items-center space-x-2">
-                    <.input
-                      name={"metadata_key_#{index}"}
-                      type="text"
-                      value={pair.key}
-                      placeholder="Key"
-                      class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                      phx-change="update_metadata_pair"
-                      phx-value-index={index}
-                      phx-value-field="key"
-                    />
-                    <.input
-                      name={"metadata_value_#{index}"}
-                      type="text"
-                      value={pair.value}
-                      placeholder="Value"
-                      class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                      phx-change="update_metadata_pair"
-                      phx-value-index={index}
-                      phx-value-field="value"
-                    />
-                    <%= if length(@metadata_pairs) > 1 do %>
-                      <button
-                        type="button"
-                        phx-click="remove_metadata_pair"
-                        phx-value-index={index}
-                        class="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                      >
-                        <.icon name="hero-x-mark" class="h-4 w-4" />
-                      </button>
-                    <% end %>
-                  </div>
-                <% end %>
-              </div>
-              <p class="mt-1 text-sm text-gray-500">
-                Add key-value pairs for additional secret information (e.g., environment, owner, etc.)
-              </p>
-            </div>
-            
-    <!-- Submit Button -->
-            <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-              <.link
-                navigate="/dashboard"
-                class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-              >
-                Cancel
-              </.link>
-
-              <button
-                type="submit"
-                disabled={not form_valid?(@errors) or @loading}
-                class={[
-                  "px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500",
-                  if(form_valid?(@errors) and not @loading,
-                    do: "bg-indigo-600 hover:bg-indigo-700",
-                    else: "bg-gray-400 cursor-not-allowed"
-                  )
-                ]}
-              >
-                <%= if @loading do %>
-                  <div class="flex items-center">
-                    <svg
-                      class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        class="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="4"
-                      >
-                      </circle>
-                      <path
-                        class="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      >
-                      </path>
-                    </svg>
-                    {if @action == :new, do: "Creating...", else: "Updating..."}
+              <.form for={@form} phx-submit="submit" phx-change="validate" class="space-y-6">
+                <!-- Secret Type Toggle (only for new secrets) -->
+                <%= if @action == :new do %>
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text font-medium">Secret Type</span>
+                    </label>
+                    <div class="flex gap-6">
+                      <label class="label cursor-pointer gap-2">
+                        <input
+                          type="radio"
+                          name="secret[secret_type]"
+                          value="role_based"
+                          checked={@selected_secret_type == "role_based"}
+                          phx-click="toggle_secret_type"
+                          phx-value-secret_type="role_based"
+                          class="radio radio-primary"
+                        />
+                        <span class="label-text">Role-based Secret</span>
+                      </label>
+                      <label class="label cursor-pointer gap-2">
+                        <input
+                          type="radio"
+                          name="secret[secret_type]"
+                          value="personal"
+                          checked={@selected_secret_type == "personal"}
+                          phx-click="toggle_secret_type"
+                          phx-value-secret_type="personal"
+                          class="radio radio-primary"
+                        />
+                        <span class="label-text">Personal Secret</span>
+                      </label>
+                    </div>
+                    <label class="label">
+                      <span class="label-text-alt">
+                        <%= if @selected_secret_type == "personal" do %>
+                          Personal secrets are only accessible by you and won't be shared based on roles.
+                        <% else %>
+                          Role-based secrets are accessible based on your assigned roles and permissions.
+                        <% end %>
+                      </span>
+                    </label>
                   </div>
                 <% else %>
-                  {if @action == :new, do: "Create Secret", else: "Update Secret"}
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text font-medium">Secret Type</span>
+                    </label>
+                    <div class="flex items-center gap-2">
+                      <span class="capitalize">{String.replace(@secret.secret_type, "_", " ")}</span>
+                      <%= if @secret.secret_type == "personal" do %>
+                        <div class="badge badge-info">Personal</div>
+                      <% else %>
+                        <div class="badge badge-success">Role-based</div>
+                      <% end %>
+                    </div>
+                    <label class="label">
+                      <span class="label-text-alt">Secret type cannot be changed when editing</span>
+                    </label>
+                  </div>
                 <% end %>
-              </button>
+                
+    <!-- Secret Key (only for new secrets) -->
+                <%= if @action == :new do %>
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text font-medium">Secret Key</span>
+                    </label>
+                    <.input
+                      field={@form[:key]}
+                      type="text"
+                      placeholder="e.g., api/database/password or prod/jwt-secret"
+                      class={[
+                        "input input-bordered",
+                        if(@errors[:key], do: "input-error", else: "")
+                      ]}
+                      phx-debounce="300"
+                    />
+                    <label :if={@errors[:key]} class="label">
+                      <span class="label-text-alt text-error">{@errors[:key]}</span>
+                    </label>
+                    <label class="label">
+                      <span class="label-text-alt">
+                        <%= if @selected_secret_type == "personal" do %>
+                          Choose a descriptive name for your personal secret (e.g., my-password, personal-api-key)
+                        <% else %>
+                          Use forward slashes to organize secrets hierarchically (e.g., app/env/key)
+                        <% end %>
+                      </span>
+                    </label>
+                  </div>
+                <% else %>
+                  <div class="form-control">
+                    <label class="label">
+                      <span class="label-text font-medium">Secret Key</span>
+                    </label>
+                    <input type="text" value={@secret.key} class="input input-bordered" disabled />
+                    <label class="label">
+                      <span class="label-text-alt">Secret key cannot be changed when editing</span>
+                    </label>
+                  </div>
+                <% end %>
+                
+    <!-- Secret Value -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text font-medium">Secret Value</span>
+                  </label>
+                  <.input
+                    field={@form[:value]}
+                    type="textarea"
+                    rows="4"
+                    placeholder="Enter the secret value..."
+                    class={[
+                      "textarea textarea-bordered",
+                      if(@errors[:value], do: "textarea-error", else: "")
+                    ]}
+                    phx-debounce="300"
+                  />
+                  <label :if={@errors[:value]} class="label">
+                    <span class="label-text-alt text-error">{@errors[:value]}</span>
+                  </label>
+                  <label class="label">
+                    <span class="label-text-alt">
+                      The secret value will be encrypted before storage
+                    </span>
+                  </label>
+                </div>
+                
+    <!-- Metadata -->
+                <div class="form-control">
+                  <div class="flex items-center justify-between">
+                    <label class="label">
+                      <span class="label-text font-medium">Metadata (Optional)</span>
+                    </label>
+                    <button type="button" phx-click="add_metadata_pair" class="btn btn-sm btn-primary">
+                      <.icon name="hero-plus" class="h-4 w-4" /> Add Field
+                    </button>
+                  </div>
+
+                  <div class="space-y-2">
+                    <%= for {pair, index} <- Enum.with_index(@metadata_pairs) do %>
+                      <div class="flex items-center gap-2">
+                        <.input
+                          name={"metadata_key_#{index}"}
+                          type="text"
+                          value={pair.key}
+                          placeholder="Key"
+                          class="input input-bordered flex-1"
+                          phx-change="update_metadata_pair"
+                          phx-value-index={index}
+                          phx-value-field="key"
+                        />
+                        <.input
+                          name={"metadata_value_#{index}"}
+                          type="text"
+                          value={pair.value}
+                          placeholder="Value"
+                          class="input input-bordered flex-1"
+                          phx-change="update_metadata_pair"
+                          phx-value-index={index}
+                          phx-value-field="value"
+                        />
+                        <%= if length(@metadata_pairs) > 1 do %>
+                          <button
+                            type="button"
+                            phx-click="remove_metadata_pair"
+                            phx-value-index={index}
+                            class="btn btn-ghost btn-sm"
+                          >
+                            <.icon name="hero-x-mark" class="h-4 w-4" />
+                          </button>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  </div>
+                  <label class="label">
+                    <span class="label-text-alt">
+                      Add key-value pairs for additional secret information (e.g., environment, owner, etc.)
+                    </span>
+                  </label>
+                </div>
+                
+    <!-- Submit Button -->
+                <div class="card-actions justify-end pt-4">
+                  <.link navigate="/dashboard" class="btn btn-ghost">
+                    Cancel
+                  </.link>
+
+                  <button
+                    type="submit"
+                    disabled={not form_valid?(@errors) or @loading}
+                    class={[
+                      "btn",
+                      if(form_valid?(@errors) and not @loading,
+                        do: "btn-primary",
+                        else: "btn-disabled"
+                      )
+                    ]}
+                  >
+                    <%= if @loading do %>
+                      <span class="loading loading-spinner loading-sm"></span>
+                      {if @action == :new, do: "Creating...", else: "Updating..."}
+                    <% else %>
+                      {if @action == :new, do: "Create Secret", else: "Update Secret"}
+                    <% end %>
+                  </button>
+                </div>
+              </.form>
             </div>
-          </.form>
-        </div>
-      </main>
-    </div>
+          </div>
+        </main>
+      </div>
+    </VaultLiteWeb.Layouts.app>
     """
   end
 end
