@@ -1,4 +1,4 @@
-defmodule VaultLite.AuditLog do
+defmodule VaultLite.Schema.AuditLog do
   @moduledoc """
   Audit log schema and functions for tracking user actions and security events.
   """
@@ -65,7 +65,7 @@ defmodule VaultLite.AuditLog do
       metadata: metadata
     }
 
-    %VaultLite.AuditLog{}
+    %VaultLite.Schema.AuditLog{}
     |> changeset(attrs)
   end
 

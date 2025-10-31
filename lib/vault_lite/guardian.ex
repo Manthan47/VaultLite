@@ -12,7 +12,7 @@ defmodule VaultLite.Guardian do
 
   alias VaultLite.Auth
   alias VaultLite.Repo
-  alias VaultLite.User
+  alias VaultLite.Schema.User
 
   @doc """
   Encodes the user information into the JWT token.

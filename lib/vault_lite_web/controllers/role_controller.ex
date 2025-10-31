@@ -6,8 +6,8 @@ defmodule VaultLiteWeb.RoleController do
 
   alias Guardian.Plug
   alias VaultLite.Auth
-  alias VaultLite.Role
   alias VaultLite.Repo
+  alias VaultLite.Schema.Role
 
   action_fallback VaultLiteWeb.FallbackController
 

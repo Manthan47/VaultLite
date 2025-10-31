@@ -9,7 +9,7 @@ defmodule VaultLiteWeb.AuthController do
   alias Ecto.Changeset
   alias VaultLite.Guardian
   alias VaultLite.Repo
-  alias VaultLite.User
+  alias VaultLite.Schema.User
 
   action_fallback VaultLiteWeb.FallbackController
 

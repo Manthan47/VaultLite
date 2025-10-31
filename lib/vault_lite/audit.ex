@@ -7,9 +7,9 @@ defmodule VaultLite.Audit do
   """
   import Ecto.Query
 
-  alias VaultLite.AuditLog
   alias VaultLite.Repo
-  alias VaultLite.User
+  alias VaultLite.Schema.AuditLog
+  alias VaultLite.Schema.User
 
   require Logger
 

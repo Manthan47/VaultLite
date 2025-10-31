@@ -1,4 +1,4 @@
-defmodule VaultLite.Role do
+defmodule VaultLite.Schema.Role do
   @moduledoc """
   Role schema and functions for managing user roles and permissions.
   """
@@ -11,7 +11,7 @@ defmodule VaultLite.Role do
     field :name, :string
     field :permissions, {:array, :string}, default: []
 
-    belongs_to :user, VaultLite.User
+    belongs_to :user, VaultLite.Schema.User
 
     timestamps()
   end
@@ -45,7 +45,7 @@ defmodule VaultLite.Role do
   @doc """
   Check if a role has a specific permission.
   """
-  def has_permission?(%VaultLite.Role{permissions: permissions}, permission) do
+  def has_permission?(%VaultLite.Schema.Role{permissions: permissions}, permission) do
     permission in permissions or "admin" in permissions
   end
 
@@ -53,7 +53,7 @@ defmodule VaultLite.Role do
   Check if a role can perform a specific action.
   Map actions to required permissions.
   """
-  def can_perform_action?(%VaultLite.Role{} = role, action) do
+  def can_perform_action?(%VaultLite.Schema.Role{} = role, action) do
     required_permission = map_action_to_permission(action)
     has_permission?(role, required_permission)
   end
