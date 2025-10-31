@@ -8,7 +8,7 @@ defmodule VaultLiteWeb.SecretsLive.SecretFormLive do
   """
   use VaultLiteWeb, :live_view
 
-  alias VaultLite.{Secrets, User}
+  alias VaultLite.{Secrets, User, SecretGenerator}
 
   @impl true
   def mount(params, session, socket) do
@@ -43,6 +43,10 @@ defmodule VaultLiteWeb.SecretsLive.SecretFormLive do
       |> assign(:loading, false)
       |> assign(:metadata_pairs, [%{key: "", value: ""}])
       |> assign(:selected_secret_type, "role_based")
+      |> assign(:show_generator, false)
+      |> assign(:generator_type, :password)
+      |> assign(:generator_length, 16)
+      |> assign(:generator_include_symbols, true)
 
     # If editing, populate form with existing data
     socket =
@@ -77,6 +81,10 @@ defmodule VaultLiteWeb.SecretsLive.SecretFormLive do
         )
         |> assign(:metadata_pairs, metadata_pairs)
         |> assign(:selected_secret_type, secret.secret_type)
+        |> assign(:show_generator, false)
+        |> assign(:generator_type, :password)
+        |> assign(:generator_length, 16)
+        |> assign(:generator_include_symbols, true)
       else
         socket
       end
@@ -175,6 +183,100 @@ defmodule VaultLiteWeb.SecretsLive.SecretFormLive do
       end
 
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("toggle_generator", _, socket) do
+    {:noreply, assign(socket, :show_generator, !socket.assigns.show_generator)}
+  end
+
+  @impl true
+  def handle_event("update_generator_type", %{"generator_type" => type_str} = _params, socket) do
+    generator_type = String.to_atom(type_str)
+    current_type = socket.assigns.generator_type
+    current_length = socket.assigns.generator_length
+
+    # If type changed and current length is the default for the old type,
+    # update to default for new type
+    generator_length =
+      if generator_type != current_type and
+           current_length == SecretGenerator.default_length(current_type) do
+        SecretGenerator.default_length(generator_type)
+      else
+        # Keep current length if valid for new type, otherwise use default
+        if SecretGenerator.valid_length?(generator_type, current_length) do
+          current_length
+        else
+          SecretGenerator.default_length(generator_type)
+        end
+      end
+
+    socket =
+      socket
+      |> assign(:generator_type, generator_type)
+      |> assign(:generator_length, generator_length)
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event(
+        "update_generator_length",
+        %{"generator_length" => length_str} = _params,
+        socket
+      ) do
+    generator_length =
+      case Integer.parse(length_str) do
+        {length, ""} ->
+          if SecretGenerator.valid_length?(socket.assigns.generator_type, length) do
+            length
+          else
+            socket.assigns.generator_length
+          end
+
+        _ ->
+          socket.assigns.generator_length
+      end
+
+    socket = assign(socket, :generator_length, generator_length)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("update_generator_symbols", params, socket) do
+    generator_include_symbols = Map.has_key?(params, "generator_include_symbols")
+    socket = assign(socket, :generator_include_symbols, generator_include_symbols)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("generate_secret", _, socket) do
+    opts =
+      if socket.assigns.generator_include_symbols,
+        do: [include_symbols: true],
+        else: [include_symbols: false]
+
+    case SecretGenerator.generate_secret(
+           socket.assigns.generator_type,
+           socket.assigns.generator_length,
+           opts
+         ) do
+      {:ok, generated_secret} ->
+        # Update the form with the generated secret
+        current_form_data = Phoenix.HTML.Form.input_value(socket.assigns.form, :secret) || %{}
+        updated_form_data = Map.put(current_form_data, "value", generated_secret)
+
+        socket =
+          socket
+          |> assign(:form, to_form(updated_form_data, as: :secret))
+          |> put_flash(:info, "Secret generated successfully!")
+
+        {:noreply, socket}
+
+      {:error, reason} ->
+        socket = put_flash(socket, :error, "Failed to generate secret: #{reason}")
+        {:noreply, socket}
+    end
   end
 
   @impl true
@@ -451,14 +553,96 @@ defmodule VaultLiteWeb.SecretsLive.SecretFormLive do
                 
     <!-- Secret Value -->
                 <div class="form-control">
-                  <label class="label">
-                    <span class="label-text font-medium">Secret Value</span>
-                  </label>
+                  <div class="flex items-center justify-between">
+                    <label class="label">
+                      <span class="label-text font-medium">Secret Value</span>
+                    </label>
+                    <button
+                      type="button"
+                      phx-click="toggle_generator"
+                      class="btn btn-sm btn-secondary"
+                    >
+                      <.icon name="hero-key" class="h-4 w-4" /> Generate
+                    </button>
+                  </div>
+                  
+    <!-- Secret Generator (Collapsible) -->
+                  <%= if @show_generator do %>
+                    <div class="card bg-base-200 mb-4">
+                      <div class="card-body p-4">
+                        <h4 class="card-title text-sm">Secret Generator</h4>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <!-- Generator Type -->
+                          <div class="form-control">
+                            <label class="label">
+                              <span class="label-text text-xs">Type</span>
+                            </label>
+                            <select
+                              name="generator_type"
+                              class="select select-bordered select-sm"
+                              value={to_string(@generator_type)}
+                              phx-change="update_generator_type"
+                            >
+                              <%= for {type, description} <- SecretGenerator.available_types() do %>
+                                <option value={to_string(type)}>{description}</option>
+                              <% end %>
+                            </select>
+                          </div>
+                          
+    <!-- Generator Length -->
+                          <div class="form-control">
+                            <label class="label">
+                              <span class="label-text text-xs">Length</span>
+                            </label>
+                            <input
+                              type="number"
+                              name="generator_length"
+                              value={@generator_length}
+                              min="4"
+                              max="128"
+                              class="input input-bordered input-sm"
+                              disabled={@generator_type == :uuid}
+                              phx-change="update_generator_length"
+                            />
+                          </div>
+                          
+    <!-- Include Symbols (only for password type) -->
+                          <%= if @generator_type == :password do %>
+                            <div class="form-control">
+                              <label class="label cursor-pointer">
+                                <span class="label-text text-xs">Include Symbols</span>
+                                <input
+                                  type="checkbox"
+                                  name="generator_include_symbols"
+                                  value="true"
+                                  checked={@generator_include_symbols}
+                                  class="checkbox checkbox-sm"
+                                  phx-change="update_generator_symbols"
+                                />
+                              </label>
+                            </div>
+                          <% end %>
+                        </div>
+
+                        <div class="card-actions justify-end mt-2">
+                          <button
+                            type="button"
+                            phx-click="generate_secret"
+                            class="btn btn-primary btn-sm"
+                          >
+                            <.icon name="hero-arrow-path" class="h-4 w-4" /> Generate Secret
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+
                   <.input
                     field={@form[:value]}
                     type="textarea"
                     rows="4"
-                    placeholder="Enter the secret value..."
+                    placeholder="Enter the secret value or use the generator above..."
                     class={[
                       "textarea textarea-bordered",
                       if(@errors[:value], do: "textarea-error", else: "")

@@ -29,7 +29,7 @@ defmodule VaultLiteWeb.DashboardLive.SecretDashboardLive do
         |> assign(:search_query, "")
         |> assign(:secrets, [])
         |> assign(:loading, true)
-        # all, personal, role_based
+        # all, personal, role_based, shared_with_me
         |> assign(:filter_type, "all")
         |> load_secrets()
 
@@ -131,12 +131,17 @@ defmodule VaultLiteWeb.DashboardLive.SecretDashboardLive do
       case filter_type do
         "personal" ->
           Enum.filter(searched_secrets, fn secret ->
-            secret.secret_type == "personal"
+            secret.secret_type == "personal" && !Map.get(secret, :is_shared, false)
           end)
 
         "role_based" ->
           Enum.filter(searched_secrets, fn secret ->
             secret.secret_type == "role_based"
+          end)
+
+        "shared_with_me" ->
+          Enum.filter(searched_secrets, fn secret ->
+            Map.get(secret, :is_shared, false)
           end)
 
         _ ->
@@ -152,17 +157,49 @@ defmodule VaultLiteWeb.DashboardLive.SecretDashboardLive do
     Calendar.strftime(datetime, "%Y-%m-%d %H:%M")
   end
 
-  defp secret_type_badge(secret_type) do
-    case secret_type do
-      "personal" ->
+  defp secret_type_badge(secret) do
+    cond do
+      Map.get(secret, :is_shared, false) ->
+        {"Shared by #{Map.get(secret, :shared_by, "Unknown")}", "bg-purple-100 text-purple-800"}
+
+      secret.secret_type == "personal" ->
         {"Personal", "bg-blue-100 text-blue-800"}
 
-      "role_based" ->
+      secret.secret_type == "role_based" ->
         {"Role-based", "bg-green-100 text-green-800"}
 
-      _ ->
+      true ->
         {"Unknown", "bg-gray-100 text-gray-800"}
     end
+  end
+
+  defp can_share_secret?(secret, user) do
+    secret.secret_type == "personal" &&
+      secret.owner_id == user.id &&
+      !Map.get(secret, :is_shared, false)
+  end
+
+  defp can_edit_secret?(secret, user) do
+    cond do
+      Map.get(secret, :is_shared, false) ->
+        Map.get(secret, :permission_level) == "editable"
+
+      secret.secret_type == "personal" ->
+        secret.owner_id == user.id
+
+      secret.secret_type == "role_based" ->
+        # Use existing role-based authorization logic if needed
+        true
+
+      true ->
+        false
+    end
+  end
+
+  defp can_delete_secret?(secret, user) do
+    # Only owners can delete secrets, not shared users
+    secret.secret_type == "personal" && secret.owner_id == user.id &&
+      !Map.get(secret, :is_shared, false)
   end
 
   @impl true
@@ -229,6 +266,20 @@ defmodule VaultLiteWeb.DashboardLive.SecretDashboardLive do
                 </button>
                 <button
                   phx-click="filter_secrets"
+                  phx-value-filter="shared_with_me"
+                  role="tab"
+                  class={[
+                    "tab",
+                    if(@filter_type == "shared_with_me",
+                      do: "tab-active",
+                      else: ""
+                    )
+                  ]}
+                >
+                  Shared with Me
+                </button>
+                <button
+                  phx-click="filter_secrets"
                   phx-value-filter="role_based"
                   role="tab"
                   class={[
@@ -254,11 +305,13 @@ defmodule VaultLiteWeb.DashboardLive.SecretDashboardLive do
                 <p>
                   <%= cond do %>
                     <% @search_query != "" and @filter_type != "all" -> %>
-                      No {@filter_type} secrets found matching "{@search_query}"
+                      No {String.replace(@filter_type, "_", " ")} secrets found matching "{@search_query}"
                     <% @search_query != "" -> %>
                       No secrets found matching "{@search_query}"
                     <% @filter_type == "personal" -> %>
                       You don't have any personal secrets yet.
+                    <% @filter_type == "shared_with_me" -> %>
+                      No secrets have been shared with you yet.
                     <% @filter_type == "role_based" -> %>
                       You don't have access to any role-based secrets.
                     <% true -> %>
@@ -294,13 +347,35 @@ defmodule VaultLiteWeb.DashboardLive.SecretDashboardLive do
                               <div class="flex items-center gap-2">
                                 <div class="font-bold">{secret.key}</div>
                                 <div class="badge badge-ghost badge-sm">v{secret.version}</div>
-                                <% {badge_text, _badge_class} = secret_type_badge(secret.secret_type) %>
-                                <div class="badge badge-outline badge-sm">{badge_text}</div>
+                                <% {badge_text, badge_class} = secret_type_badge(secret) %>
+                                <div class={["badge badge-outline badge-sm", badge_class]}>
+                                  {badge_text}
+                                </div>
+                                <%= if Map.get(secret, :is_shared, false) do %>
+                                  <div class={[
+                                    "badge badge-sm",
+                                    if(Map.get(secret, :permission_level) == "editable",
+                                      do: "badge-warning",
+                                      else: "badge-info"
+                                    )
+                                  ]}>
+                                    {String.replace(
+                                      Map.get(secret, :permission_level, "read_only"),
+                                      "_",
+                                      " "
+                                    )
+                                    |> String.capitalize()}
+                                  </div>
+                                <% end %>
                               </div>
                               <div class="text-sm opacity-50">
-                                Last updated {format_date(secret.updated_at)}
-                                <%= if secret.secret_type == "personal" do %>
-                                  • Only you can access this secret
+                                <%= if Map.get(secret, :is_shared, false) do %>
+                                  Shared with you on {format_date(Map.get(secret, :shared_at))}
+                                <% else %>
+                                  Last updated {format_date(secret.updated_at)}
+                                  <%= if secret.secret_type == "personal" do %>
+                                    • Only you can access this secret
+                                  <% end %>
                                 <% end %>
                               </div>
                             </div>
@@ -315,22 +390,38 @@ defmodule VaultLiteWeb.DashboardLive.SecretDashboardLive do
                             >
                               <.icon name="hero-eye" class="h-4 w-4" />
                             </.link>
-                            <.link
-                              navigate={"/secrets/#{secret.key}/edit"}
-                              class="btn btn-ghost btn-xs"
-                              title="Edit secret"
-                            >
-                              <.icon name="hero-pencil" class="h-4 w-4" />
-                            </.link>
-                            <button
-                              phx-click="delete_secret"
-                              phx-value-key={secret.key}
-                              class="btn btn-ghost btn-xs"
-                              title="Delete secret"
-                              data-confirm="Are you sure you want to delete this secret?"
-                            >
-                              <.icon name="hero-trash" class="h-4 w-4" />
-                            </button>
+
+                            <%= if can_edit_secret?(secret, @current_user) do %>
+                              <.link
+                                navigate={"/secrets/#{secret.key}/edit"}
+                                class="btn btn-ghost btn-xs"
+                                title="Edit secret"
+                              >
+                                <.icon name="hero-pencil" class="h-4 w-4" />
+                              </.link>
+                            <% end %>
+
+                            <%= if can_share_secret?(secret, @current_user) do %>
+                              <.link
+                                navigate={"/secrets/#{secret.key}/share"}
+                                class="btn btn-ghost btn-xs"
+                                title="Manage sharing"
+                              >
+                                <.icon name="hero-share" class="h-4 w-4" />
+                              </.link>
+                            <% end %>
+
+                            <%= if can_delete_secret?(secret, @current_user) do %>
+                              <button
+                                phx-click="delete_secret"
+                                phx-value-key={secret.key}
+                                class="btn btn-ghost btn-xs"
+                                title="Delete secret"
+                                data-confirm="Are you sure you want to delete this secret?"
+                              >
+                                <.icon name="hero-trash" class="h-4 w-4" />
+                              </button>
+                            <% end %>
                           </div>
                         </td>
                       </tr>

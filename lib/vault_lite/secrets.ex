@@ -12,7 +12,7 @@ defmodule VaultLite.Secrets do
 
   import Ecto.Query, warn: false
   alias VaultLite.Repo
-  alias VaultLite.{Secret, User, Audit, Encryption, Auth}
+  alias VaultLite.{Secret, User, Audit, Encryption, Auth, SecretSharing}
 
   @doc """
   Creates a new encrypted secret with version 1.
@@ -69,13 +69,30 @@ defmodule VaultLite.Secrets do
       {:error, :not_found}
   """
   def get_secret(key, user, version \\ nil) do
+    # First try direct access (owner or role-based)
+    case get_secret_direct(key, user, version) do
+      {:ok, secret_data} ->
+        {:ok, secret_data}
+
+      {:error, :unauthorized} ->
+        # Try to access as shared secret
+        get_shared_secret(key, user, version)
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  # Direct secret access (original logic)
+  defp get_secret_direct(key, user, version) do
     with secret when not is_nil(secret) <- find_secret(key, version),
          {:ok, :authorized} <- check_secret_access(user, key, "read", secret.secret_type, secret),
          {:ok, decrypted_value} <- Encryption.decrypt(secret.value),
          {:ok, _audit} <-
            log_secret_action("read", key, user, %{
              version: secret.version,
-             secret_type: secret.secret_type
+             secret_type: secret.secret_type,
+             access_type: "direct"
            }) do
       {:ok,
        %{
@@ -86,11 +103,46 @@ defmodule VaultLite.Secrets do
          secret_type: secret.secret_type,
          owner_id: secret.owner_id,
          inserted_at: secret.inserted_at,
-         updated_at: secret.updated_at
+         updated_at: secret.updated_at,
+         is_shared: false
        }}
     else
       nil -> {:error, :not_found}
       {:error, :unauthorized} -> {:error, :unauthorized}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  # Shared secret access
+  defp get_shared_secret(key, user, version) do
+    with {:ok, permission_level} <- SecretSharing.get_shared_secret_permission(key, user),
+         secret when not is_nil(secret) <- find_secret(key, version),
+         {:ok, decrypted_value} <- Encryption.decrypt(secret.value),
+         {:ok, _audit} <-
+           log_secret_action("read", key, user, %{
+             version: secret.version,
+             secret_type: secret.secret_type,
+             access_type: "shared",
+             permission_level: permission_level
+           }) do
+      {:ok,
+       %{
+         key: secret.key,
+         value: decrypted_value,
+         version: secret.version,
+         metadata: secret.metadata,
+         secret_type: secret.secret_type,
+         owner_id: secret.owner_id,
+         inserted_at: secret.inserted_at,
+         updated_at: secret.updated_at,
+         is_shared: true,
+         permission_level: permission_level,
+         can_edit: permission_level == "editable"
+       }}
+    else
+      nil -> {:error, :not_found}
+      {:error, :not_shared} -> {:error, :unauthorized}
+      {:error, :expired} -> {:error, :unauthorized}
       {:error, reason} -> {:error, reason}
     end
   end
@@ -112,10 +164,25 @@ defmodule VaultLite.Secrets do
       {:error, :not_found}
   """
   def update_secret(key, value, user, metadata \\ %{}) do
-    with existing_secret when not is_nil(existing_secret) <- find_secret(key, nil),
-         {:ok, :authorized} <-
-           check_secret_access(user, key, "update", existing_secret.secret_type, existing_secret),
-         latest_version <- existing_secret.version,
+    with existing_secret when not is_nil(existing_secret) <- find_secret(key, nil) do
+      # Check if this is a shared secret first
+      case check_secret_access(user, key, "update", existing_secret.secret_type, existing_secret) do
+        {:ok, :authorized} ->
+          # Direct access (owner or role-based)
+          update_secret_direct(key, value, user, metadata, existing_secret)
+
+        {:error, :unauthorized} ->
+          # Try as shared secret with editable permission
+          update_shared_secret(key, value, user, metadata, existing_secret)
+      end
+    else
+      nil -> {:error, :not_found}
+    end
+  end
+
+  # Direct secret update (original logic)
+  defp update_secret_direct(key, value, user, metadata, existing_secret) do
+    with latest_version <- existing_secret.version,
          new_version = latest_version + 1,
          {:ok, encrypted_value} <- Encryption.encrypt(value),
          changeset <-
@@ -131,13 +198,53 @@ defmodule VaultLite.Secrets do
          {:ok, _audit} <-
            log_secret_action("update", key, user, %{
              new_version: new_version,
-             secret_type: existing_secret.secret_type
+             secret_type: existing_secret.secret_type,
+             access_type: "direct"
            }) do
       {:ok, secret}
     else
-      nil -> {:error, :not_found}
-      {:error, :unauthorized} -> {:error, :unauthorized}
       {:error, reason} -> {:error, reason}
+    end
+  end
+
+  # Shared secret update
+  defp update_shared_secret(key, value, user, metadata, existing_secret) do
+    case SecretSharing.get_shared_secret_permission(key, user) do
+      {:ok, "editable"} ->
+        # User has edit permission on shared secret
+        with latest_version <- existing_secret.version,
+             new_version = latest_version + 1,
+             {:ok, encrypted_value} <- Encryption.encrypt(value),
+             changeset <-
+               build_update_changeset(
+                 key,
+                 encrypted_value,
+                 new_version,
+                 metadata,
+                 existing_secret.secret_type,
+                 user
+               ),
+             {:ok, secret} <- Repo.insert(changeset),
+             {:ok, _audit} <-
+               log_secret_action("update", key, user, %{
+                 new_version: new_version,
+                 secret_type: existing_secret.secret_type,
+                 access_type: "shared",
+                 permission_level: "editable"
+               }) do
+          {:ok, secret}
+        else
+          {:error, reason} -> {:error, reason}
+        end
+
+      {:ok, "read_only"} ->
+        {:error, :read_only_access}
+
+      {:error, :not_shared} ->
+        {:error, :unauthorized}
+
+      {:error, :expired} ->
+        {:error, :unauthorized}
     end
   end
 
@@ -192,7 +299,8 @@ defmodule VaultLite.Secrets do
 
   @doc """
   Lists all active (non-deleted) secrets for a user.
-  Returns both role-based secrets (that the user has access to) and personal secrets (owned by the user).
+  Returns role-based secrets (that the user has access to), personal secrets (owned by the user),
+  and shared secrets (shared with the user).
   """
   def list_secrets(user, opts \\ []) do
     limit = Keyword.get(opts, :limit, 100)
@@ -219,9 +327,22 @@ defmodule VaultLite.Secrets do
       |> order_by([s], desc: s.updated_at)
       |> Repo.all()
 
+    # Get shared secrets
+    {:ok, shared_secret_data} = SecretSharing.list_shared_secrets(user)
+
+    shared_secrets =
+      Enum.map(shared_secret_data, fn share_data ->
+        Map.merge(share_data.secret, %{
+          shared_by: share_data.owner_username,
+          permission_level: share_data.permission_level,
+          shared_at: share_data.shared_at,
+          is_shared: true
+        })
+      end)
+
     # Combine and sort all secrets
     all_authorized_secrets =
-      (role_based_secrets ++ personal_secrets)
+      (role_based_secrets ++ personal_secrets ++ shared_secrets)
       |> Enum.sort_by(& &1.updated_at, {:desc, NaiveDateTime})
       |> Enum.drop(offset)
       |> Enum.take(limit)
@@ -233,7 +354,8 @@ defmodule VaultLite.Secrets do
       count: length(all_authorized_secrets),
       keys: secret_keys,
       role_based_count: length(role_based_secrets),
-      personal_count: length(personal_secrets)
+      personal_count: length(personal_secrets),
+      shared_count: length(shared_secrets)
     })
 
     {:ok, Enum.map(all_authorized_secrets, &format_secret_summary/1)}
@@ -358,7 +480,7 @@ defmodule VaultLite.Secrets do
   end
 
   defp format_secret_summary(secret) do
-    %{
+    base_summary = %{
       key: secret.key,
       version: secret.version,
       metadata: secret.metadata,
@@ -367,6 +489,15 @@ defmodule VaultLite.Secrets do
       created_at: secret.inserted_at,
       updated_at: secret.updated_at
     }
+
+    # Add sharing information if present
+    sharing_info =
+      secret
+      |> Map.take([:is_shared, :shared_by, :permission_level, :shared_at])
+      |> Enum.filter(fn {_k, v} -> v != nil end)
+      |> Map.new()
+
+    Map.merge(base_summary, sharing_info)
   end
 
   defp format_secret_version(secret) do

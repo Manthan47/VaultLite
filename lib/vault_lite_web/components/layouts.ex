@@ -39,11 +39,11 @@ defmodule VaultLiteWeb.Layouts do
           <div class="flex justify-between h-16">
             <div class="flex items-center">
               <.icon name="hero-lock-closed" class="h-8 w-8" />
-              <span class="ml-2 text-xl font-bold">VaultLite</span>
+              <span class="ml-2 mr-4 text-xl font-bold">VaultLite</span>
             </div>
 
             <div class="flex items-center space-x-4">
-              <span class="text-sm">Welcome, {@current_user.username}!</span>
+              <div class="text-sm">Welcome, {@current_user.username}!</div>
 
               <.link navigate="/dashboard" class="btn btn-ghost btn-sm">
                 Dashboard

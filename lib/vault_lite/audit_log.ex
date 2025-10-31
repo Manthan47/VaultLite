@@ -30,8 +30,6 @@ defmodule VaultLite.AuditLog do
     timestamps()
   end
 
-  @valid_actions ~w(create read update delete list assign_role revoke_role create_user authenticate failed_authentication update_role access_check system system_cleanup purge_logs)
-
   @doc """
   Changeset for creating a new audit log entry.
   """
@@ -66,11 +64,6 @@ defmodule VaultLite.AuditLog do
     %VaultLite.AuditLog{}
     |> changeset(attrs)
   end
-
-  @doc """
-  Get all valid actions that can be logged.
-  """
-  def valid_actions, do: @valid_actions
 
   @doc """
   Query helper to get logs for a specific user.
