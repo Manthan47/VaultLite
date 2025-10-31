@@ -10,8 +10,11 @@ defmodule VaultLite.Auth do
   """
 
   import Ecto.Query, warn: false
+
+  alias VaultLite.AuditLog
+  alias VaultLite.Role
   alias VaultLite.Repo
-  alias VaultLite.{User, Role, AuditLog}
+  alias VaultLite.User
 
   @doc """
   Creates a new user with the provided attributes.

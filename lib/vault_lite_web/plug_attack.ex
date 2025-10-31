@@ -1,4 +1,7 @@
 defmodule VaultLiteWeb.PlugAttack do
+  @moduledoc """
+  PlugAttack configuration for VaultLite.
+  """
   use PlugAttack
 
   # Throttle login requests - 10 per minute per IP

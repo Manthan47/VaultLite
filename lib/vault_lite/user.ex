@@ -1,5 +1,9 @@
 defmodule VaultLite.User do
+  @moduledoc """
+  User schema and functions for managing user accounts.
+  """
   use Ecto.Schema
+
   import Ecto.Changeset
   import Ecto.Query
 

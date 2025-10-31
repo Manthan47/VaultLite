@@ -1,5 +1,9 @@
 defmodule VaultLite.AuditLog do
+  @moduledoc """
+  Audit log schema and functions for tracking user actions and security events.
+  """
   use Ecto.Schema
+
   import Ecto.Changeset
   import Ecto.Query
 

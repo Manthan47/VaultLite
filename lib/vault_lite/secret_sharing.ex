@@ -8,9 +8,13 @@ defmodule VaultLite.SecretSharing do
   - Revoke sharing access
   - List shared secrets and created shares
   """
-
   import Ecto.Query
-  alias VaultLite.{Repo, SecretShare, User, Secret, Audit}
+
+  alias VaultLite.Audit
+  alias VaultLite.Repo
+  alias VaultLite.Secret
+  alias VaultLite.SecretShare
+  alias VaultLite.User
 
   @doc """
   Share a secret with another user.

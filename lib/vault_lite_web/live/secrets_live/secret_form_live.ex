@@ -8,7 +8,9 @@ defmodule VaultLiteWeb.SecretsLive.SecretFormLive do
   """
   use VaultLiteWeb, :live_view
 
-  alias VaultLite.{Secrets, User, SecretGenerator}
+  alias VaultLite.SecretGenerator
+  alias VaultLite.Secrets
+  alias VaultLite.User
 
   @impl true
   def mount(params, session, socket) do

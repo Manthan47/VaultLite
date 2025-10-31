@@ -1,5 +1,9 @@
 defmodule VaultLiteWeb.SecretSharingController do
+  @moduledoc """
+  Controller for managing secret sharing.
+  """
   use VaultLiteWeb, :controller
+
   alias VaultLite.SecretSharing
 
   action_fallback VaultLiteWeb.FallbackController

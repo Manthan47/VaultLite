@@ -8,10 +8,11 @@ defmodule VaultLite.Guardian do
   - Token claims management
   - Integration with VaultLite.Auth for RBAC
   """
-
   use Guardian, otp_app: :vault_lite
 
-  alias VaultLite.{User, Repo, Auth}
+  alias VaultLite.Auth
+  alias VaultLite.Repo
+  alias VaultLite.User
 
   @doc """
   Encodes the user information into the JWT token.

@@ -1,5 +1,9 @@
 defmodule VaultLite.SecretShare do
+  @moduledoc """
+  Secret share schema and functions for managing secret sharing.
+  """
   use Ecto.Schema
+
   import Ecto.Changeset
   import Ecto.Query
 

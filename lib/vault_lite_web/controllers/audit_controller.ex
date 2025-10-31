@@ -1,8 +1,12 @@
 defmodule VaultLiteWeb.AuditController do
+  @moduledoc """
+  Controller for managing audit logs.
+  """
   use VaultLiteWeb, :controller
 
-  alias VaultLite.{Audit, Auth}
   alias Guardian.Plug
+  alias VaultLite.Audit
+  alias VaultLite.Auth
 
   action_fallback VaultLiteWeb.FallbackController
 

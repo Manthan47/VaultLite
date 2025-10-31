@@ -5,7 +5,6 @@ defmodule VaultLite.SecretGenerator do
   Provides various methods to generate cryptographically secure random secrets
   suitable for different use cases like API keys, passwords, tokens, etc.
   """
-
   @charset_no_symbols "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
   @charset_with_symbols "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:,.<>?"
 

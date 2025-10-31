@@ -1,8 +1,13 @@
 defmodule VaultLiteWeb.RoleController do
+  @moduledoc """
+  Controller for managing roles and role assignments.
+  """
   use VaultLiteWeb, :controller
 
-  alias VaultLite.{Auth, Role, Repo}
   alias Guardian.Plug
+  alias VaultLite.Auth
+  alias VaultLite.Role
+  alias VaultLite.Repo
 
   action_fallback VaultLiteWeb.FallbackController
 

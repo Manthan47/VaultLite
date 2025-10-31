@@ -1,5 +1,9 @@
 defmodule VaultLite.Role do
+  @moduledoc """
+  Role schema and functions for managing user roles and permissions.
+  """
   use Ecto.Schema
+
   import Ecto.Changeset
   import Ecto.Query
 

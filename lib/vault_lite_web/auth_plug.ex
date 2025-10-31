@@ -3,11 +3,13 @@ defmodule VaultLiteWeb.AuthPlug do
   Authentication plugs for LiveView integration with Guardian JWT.
   Provides session-based authentication for LiveView while maintaining JWT compatibility.
   """
-
   import Plug.Conn
   import Phoenix.Controller
-  alias VaultLite.{Auth, User, Repo}
+
+  alias VaultLite.Auth
   alias VaultLite.Guardian
+  alias VaultLite.Repo
+  alias VaultLite.User
 
   @doc """
   Fetches the current user from session or Guardian token and assigns to conn.

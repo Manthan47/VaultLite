@@ -12,7 +12,6 @@ defmodule VaultLiteWeb.Plugs.SecurityHeaders do
   """
 
   import Plug.Conn
-  require Logger
 
   @doc """
   Initializes the plug with configuration options.

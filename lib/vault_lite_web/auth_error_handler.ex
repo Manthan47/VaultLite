@@ -1,4 +1,7 @@
 defmodule VaultLiteWeb.AuthErrorHandler do
+  @moduledoc """
+  Handles authentication errors for VaultLite.
+  """
   import Plug.Conn
   import Phoenix.Controller
 

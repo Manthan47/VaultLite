@@ -10,7 +10,9 @@ defmodule VaultLiteWeb.AdminLive.RoleManagementLive do
   """
   use VaultLiteWeb, :live_view
 
-  alias VaultLite.{Auth, User, Role}
+  alias VaultLite.Auth
+  alias VaultLite.Role
+  alias VaultLite.User
 
   @impl true
   def mount(_params, session, socket) do

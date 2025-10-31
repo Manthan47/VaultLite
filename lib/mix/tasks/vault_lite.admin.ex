@@ -21,7 +21,6 @@ defmodule Mix.Tasks.VaultLite.Admin do
       # Remove admin privileges from user
       mix vault_lite.admin demote <username>
   """
-
   use Mix.Task
   alias VaultLite.{Repo, User, Role}
   import Ecto.Query

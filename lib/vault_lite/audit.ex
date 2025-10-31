@@ -5,9 +5,11 @@ defmodule VaultLite.Audit do
   Provides functions to log all secret operations for auditability and compliance.
   Supports both database storage and optional external logging systems.
   """
-
   import Ecto.Query
-  alias VaultLite.{Repo, AuditLog, User}
+
+  alias VaultLite.AuditLog
+  alias VaultLite.Repo
+  alias VaultLite.User
 
   require Logger
 
