@@ -47,12 +47,15 @@ defmodule VaultLite.Security.InputValidator do
     "monkey"
   ]
 
+  # Pre-computed lowercase weak passwords for efficient lookup
+  @weak_passwords_lower Enum.map(@weak_passwords, &String.downcase/1)
+
   @suspicious_patterns [
-    # IP addresses
-    ~r/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/,
-    # Suspicious TLDs
-    ~r/\.tk$|\.ml$|\.ga$|\.cf$/,
-    # Localhost domains
+    # IP addresses - more specific to avoid backtracking
+    ~r/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/,
+    # Suspicious TLDs - atomic groups to prevent backtracking
+    ~r/\.(?:tk|ml|ga|cf)$/,
+    # Localhost domains - case insensitive but safer
     ~r/localhost/i
   ]
 
@@ -193,6 +196,32 @@ defmodule VaultLite.Security.InputValidator do
     |> validate_inclusion(field, @valid_actions)
   end
 
+  @doc """
+  Comprehensive input sanitization function.
+  Removes dangerous characters and normalizes input.
+  """
+  def sanitize_input(input) when is_binary(input) do
+    input
+    |> sanitize_html()
+    |> sanitize_control_characters()
+    |> sanitize_null_bytes()
+    |> String.trim()
+  end
+
+  def sanitize_input(input), do: input
+
+  @doc """
+  Validates input length with configurable limits.
+  """
+  def validate_input_length(changeset, field, opts \\ []) do
+    min = Keyword.get(opts, :min, 0)
+    max = Keyword.get(opts, :max, 1000)
+    message = Keyword.get(opts, :message, "length must be between #{min} and #{max} characters")
+
+    changeset
+    |> validate_length(field, min: min, max: max, message: message)
+  end
+
   # Private validation functions
 
   defp validate_no_path_traversal(changeset, field) do
@@ -281,12 +310,21 @@ defmodule VaultLite.Security.InputValidator do
 
   defp validate_email_domain_security(changeset, field) do
     validate_change(changeset, field, fn field, email ->
-      domain = email |> String.split("@") |> List.last()
+      # Safely extract domain, handling edge cases
+      case String.split(email, "@", parts: 2) do
+        [_local_part, domain] when domain != "" ->
+          # Convert to lowercase for consistent comparison
+          domain_lower = String.downcase(domain)
 
-      if Enum.any?(@suspicious_patterns, &Regex.match?(&1, domain)) do
-        [{field, "domain is not allowed"}]
-      else
-        []
+          if Enum.any?(@suspicious_patterns, &Regex.match?(&1, domain_lower)) do
+            [{field, "domain is not allowed"}]
+          else
+            []
+          end
+
+        _ ->
+          # Invalid email format, let other validations handle this
+          []
       end
     end)
   end
@@ -325,7 +363,10 @@ defmodule VaultLite.Security.InputValidator do
 
   defp validate_password_security(changeset, field) do
     validate_change(changeset, field, fn field, password ->
-      if String.downcase(password) in @weak_passwords do
+      # Check against weak passwords in a case-insensitive manner
+      password_lower = String.downcase(password)
+
+      if password_lower in @weak_passwords_lower do
         [{field, "is too common and insecure"}]
       else
         []
@@ -377,6 +418,22 @@ defmodule VaultLite.Security.InputValidator do
   end
 
   # Helper functions
+
+  # Sanitization helper functions
+  defp sanitize_html(input) do
+    # Remove HTML tags
+    String.replace(input, ~r/<[^>]*>/, "")
+  end
+
+  defp sanitize_control_characters(input) do
+    # Remove control characters except newlines and tabs
+    String.replace(input, ~r/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/, "")
+  end
+
+  defp sanitize_null_bytes(input) do
+    # Remove null bytes
+    String.replace(input, "\0", "")
+  end
 
   defp sanitize_string_value(value) when is_binary(value) do
     value

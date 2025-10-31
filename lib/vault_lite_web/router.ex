@@ -10,6 +10,7 @@ defmodule VaultLiteWeb.Router do
     plug :protect_from_forgery
     plug :put_secure_browser_headers
     plug VaultLiteWeb.Plugs.SecurityHeaders
+    plug VaultLiteWeb.Plugs.RateLimiter
   end
 
   pipeline :api do
@@ -28,7 +29,8 @@ defmodule VaultLiteWeb.Router do
   end
 
   pipeline :rate_limit do
-    plug VaultLiteWeb.PlugAttack
+    plug :accepts, ["json"]
+    plug VaultLiteWeb.Plugs.RateLimiter
   end
 
   # LiveView authentication pipeline
@@ -46,6 +48,7 @@ defmodule VaultLiteWeb.Router do
   scope "/", VaultLiteWeb do
     pipe_through [:browser, :live_no_auth]
 
+    live "/", AuthLive.LoginLive, :new
     live "/login", AuthLive.LoginLive, :new
     live "/register", AuthLive.RegisterLive, :new
   end
@@ -71,7 +74,6 @@ defmodule VaultLiteWeb.Router do
   scope "/", VaultLiteWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
     post "/liveview_login", AuthController, :liveview_login
     delete "/logout", AuthController, :logout
   end

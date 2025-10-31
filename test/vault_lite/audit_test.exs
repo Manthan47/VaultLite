@@ -4,7 +4,8 @@ defmodule VaultLite.AuditTest do
   import ExUnit.CaptureLog
   import StreamData
 
-  alias VaultLite.{Audit, User, AuditLog}
+  alias VaultLite.{Audit, AuditLog}
+  alias VaultLite.Schema.User
   alias VaultLite.Repo
 
   # Set up mocks

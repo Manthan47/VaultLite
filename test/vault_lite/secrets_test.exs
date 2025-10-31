@@ -1,10 +1,12 @@
 defmodule VaultLite.SecretsTest do
   use VaultLite.DataCase, async: true
+
   import Mox
   import ExUnit.CaptureLog
   import StreamData
 
-  alias VaultLite.{Secrets, Audit, Auth, User, Secret}
+  alias VaultLite.Schema.User
+  alias VaultLite.{Secrets, Audit, Auth, Secret}
   alias VaultLite.Repo
 
   # Set up mocks

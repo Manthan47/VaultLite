@@ -14,8 +14,6 @@ defmodule VaultLite.Application do
       {Phoenix.PubSub, name: VaultLite.PubSub},
       # Start the Finch HTTP client for sending emails
       {Finch, name: VaultLite.Finch},
-      # Start PlugAttack ETS storage for rate limiting
-      {PlugAttack.Storage.Ets, name: VaultLite.PlugAttackStorage, clean_period: 60_000},
       # Enhanced rate limiting cache
       %{
         id: :rate_limit_cache_supervisor,
