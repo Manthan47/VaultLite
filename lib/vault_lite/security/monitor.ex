@@ -172,7 +172,7 @@ defmodule VaultLite.Security.Monitor do
     ip = metadata[:ip]
 
     if ip do
-      # 10 minutes
+      # 3 minutes
       recent_failures = count_recent_failed_logins(ip, 3)
 
       if recent_failures >= get_config(:failed_login_alert_threshold, 5) do
